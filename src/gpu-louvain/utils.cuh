@@ -1,6 +1,8 @@
 #ifndef __UTILS__CUH__
 #define __UTILS__CUH__
 
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 #include <cstdio>
 #include <climits>
 #include "../louvain.h"

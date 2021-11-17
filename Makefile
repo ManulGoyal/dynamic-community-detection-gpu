@@ -238,20 +238,21 @@ DIRSRC= ./src/
 GPUDIRSRC= ./src/gpu-louvain/
 OBJ1= $(DIRSRC)graph_binary.o $(DIRSRC)louvain.o $(DIRSRC)quality.o $(DIRSRC)modularity.o $(DIRSRC)zahn.o $(DIRSRC)owzad.o $(DIRSRC)goldberg.o $(DIRSRC)condora.o $(DIRSRC)devind.o $(DIRSRC)devuni.o $(DIRSRC)dp.o $(DIRSRC)shimalik.o $(DIRSRC)balmod.o $(DIRSRC)timer.o
 OBJ2= $(DIRSRC)graph.o
-OBJ3= $(GPUDIRSRC)gpulouvain.o $(GPUDIRSRC)modularity.o $(GPUDIRSRC)aggregation.o $(GPUDIRSRC)utils.o
-OBJ4= $(GPUDIRSRC)gpulouvain.o $(GPUDIRSRC)modularity_mem.o $(GPUDIRSRC)aggregation_mem.o $(GPUDIRSRC)utils.o
-EXECB=cpulouvain gpulouvain gpulouvain_mem gpulouvain_full_mem convert hierarchy matrix
+OBJ3= $(GPUDIRSRC)gpulouvain.o $(GPUDIRSRC)modularity.o $(GPUDIRSRC)aggregation.o $(GPUDIRSRC)utils.o $(GPUDIRSRC)node_eval.o
+OBJ4= $(GPUDIRSRC)gpulouvain.o $(GPUDIRSRC)modularity_mem.o $(GPUDIRSRC)aggregation_mem.o $(GPUDIRSRC)utils.o $(GPUDIRSRC)node_eval.o
+# EXECB=cpulouvain gpulouvain gpulouvain_mem gpulouvain_full_mem convert hierarchy matrix
+EXECB=cpulouvain gpulouvain_full_mem convert hierarchy matrix
 
 # Target rules
 all: build
 
 build: $(EXECB)
 
-gpulouvain : $(OBJ1) $(OBJ3) $(DIRSRC)main_louvain_gpu_louvain.o
-	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
+# gpulouvain : $(OBJ1) $(OBJ3) $(DIRSRC)main_louvain_gpu_louvain.o
+# 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
 
-gpulouvain_mem : $(OBJ1) $(OBJ4) $(DIRSRC)main_louvain_gpu_louvain.o
-	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
+# gpulouvain_mem : $(OBJ1) $(OBJ4) $(DIRSRC)main_louvain_gpu_louvain.o
+# 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
 
 gpulouvain_full_mem : $(OBJ1) $(OBJ4) $(DIRSRC)main_louvain_gpu.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
@@ -271,8 +272,8 @@ matrix : $(DIRSRC)main_matrix.o
 $(DIRSRC)main_louvain_gpu.o : $(DIRSRC)main_louvain_gpu.cpp
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-$(DIRSRC)main_louvain_gpu_louvain.o : $(DIRSRC)main_louvain_gpu_louvain.cpp
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+# $(DIRSRC)main_louvain_gpu_louvain.o : $(DIRSRC)main_louvain_gpu_louvain.cpp
+# 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 $(DIRSRC)main_louvain.o : $(DIRSRC)main_louvain.cpp
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
@@ -283,6 +284,9 @@ ifeq ($(SAMPLE_ENABLED),0)
 else
 	@echo "Sample is ready - all dependencies have been met"
 endif
+
+$(GPUDIRSRC)node_eval.o: $(GPUDIRSRC)node_eval.cu
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 $(GPUDIRSRC)utils.o: $(GPUDIRSRC)utils.cu
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<

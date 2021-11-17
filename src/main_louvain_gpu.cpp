@@ -1082,9 +1082,13 @@ main(int argc, char **argv) {
 
   // Manul start
   n2c.resize(n);
+  GTIC("Init part mem");
+  GPUWrapper gpuWrapper(&c, n2c, false);
+  GTOC;
+
   GTIC("Initial partitioning");
   // cout << "Gpu start 2" << endl;
-  gpuLouvain(&c, n2c, false);
+  gpuWrapper.gpuLouvain(n2c);
   GTOC;
   // Manul end
 
@@ -1323,9 +1327,13 @@ main(int argc, char **argv) {
 			gettimeofday(&level_time_s,NULL);
 
       // Manul start
-      GTIC("partitioning after del");
+      GTIC("part after del mem");
       // Manul: isolated nodes are not removed after deletion, and n2c is perfectly valid after deletion
-      gpuLouvain(&c1, n2c, true);
+      GPUWrapper gpuWrapper(&c1, n2c, true);
+      GTOC;
+
+      GTIC("partitioning after del");
+      gpuWrapper.gpuLouvain(n2c);
       GTOC;
       // Manul end
 
@@ -1506,9 +1514,11 @@ main(int argc, char **argv) {
       cout << "Point 5" << endl;
 
 	  	//Re = nodToEval_b(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
-      GTIC("nodeToEval_add");   // Manul's Change
-	  	Re = nodToEval_add(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
-      GTOC;   // Manul's Change
+      /**********Commented*****************/
+      // GTIC("nodeToEval_add");   // Manul's Change
+	  	// Re = nodToEval_add(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
+      // GTOC;   // Manul's Change
+      /**********Commented*****************/
 
       cout << "Point 6" << endl;
     
@@ -1538,11 +1548,24 @@ main(int argc, char **argv) {
 	  	time_per_step2 = (double) ((eTime2.tv_sec -sTime2.tv_sec )*1000 + (eTime2.tv_usec -  sTime2.tv_usec)/1000);
       cout << "Point 7" << endl;
 	  	cerr<<"\t Time for nodToEval(milliseconds): "<<time_per_step2<<endl;
+
+      // Manul start
+      GTIC("part after add mem");
+      GPUWrapper gpuWrapper(&c1, n2c, true);
+      GTOC;
+
+      GTIC("node eval add gpu");
+      gpuWrapper.gpuNodeEvalAdd(vect_new_edges);
+      GTOC;
+
+      // Manul end
+
 	  	nodes_in_comm.clear();
 	  	vector<vector<int> >(nodes_in_comm).swap(nodes_in_comm);
 	  	vect_new_edges.clear();
 	  	vector<pair<unsigned int,unsigned int> >(vect_new_edges).swap(vect_new_edges);
 	  	cerr<<"R percentage : "<<(double)(c1.qual)->R.size()/(double)(c1.qual)->g.nb_nodes *100 <<endl;
+
 	  	if((c1.qual)->R.size()!=0)
 	  	{
 	  		nb_calls =0;
@@ -1553,7 +1576,7 @@ main(int argc, char **argv) {
 
         // Manul start
         GTIC("partitioning after add");
-        gpuLouvain(&c1, n2c, true);
+        gpuWrapper.gpuLouvain(n2c);
         GTOC;
         // Manul end
 

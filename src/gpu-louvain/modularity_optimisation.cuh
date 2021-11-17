@@ -19,6 +19,12 @@ const dim3 dims[] {
 		{128, 1},
 };
 
+// __device__ int getHash(int val, int index, int prime);
+
+// __device__ int prepareHashArrays(int community, int prime, float weight, float *hashWeight, int *hashCommunity, int hashTablesOffset);
+
+// __device__ float computeGain(int vertex, int community, int currentCommunity, float *communityWeight, float *vertexEdgesSum, float vertexToCommunity);
+
 /**
  * Function responsible for executing 1 phase (modularity optimisation)
  * @param minGain          minimum gain for going to next iteration of this phase
