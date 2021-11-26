@@ -63,8 +63,8 @@ class Quality {
   vector<int> n2c; // community to which each node belongs
   /*nzarayeneh 1st change*/
   //vector<vector<int> > nod_com;//store nodes for each comm
-  // Manul: set of nodes which should be processed by the passes of Louvain algorithm
-  // Manul: this set is computed by delta-screening  
+  // Manul-Manan: set of nodes which should be processed by the passes of Louvain algorithm
+  // Manul-Manan: this set is computed by delta-screening  
   vector <int> R;
  Quality(Graph &gr, const std::string& n):g(gr),size(g.nb_nodes),name(n){R.resize(g.nb_nodes);}
  /*nzarayeneh end 1st change*/

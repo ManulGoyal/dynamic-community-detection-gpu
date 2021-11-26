@@ -114,7 +114,7 @@ bool fexists(string filename)
 	return ifile.is_open();
 }
 
-// Manul: removes -1's from vector
+// Manul-Manan: removes -1's from vector
 void moveNegativeOnes(vector<int>& nums) {
         int j = 0;
         for(int i =0;i<nums.size();i++)
@@ -125,7 +125,7 @@ void moveNegativeOnes(vector<int>& nums) {
         nums.resize(j);
     }
 
-// Manul: removes 0's from vector
+// Manul-Manan: removes 0's from vector
 void movezeroes(vector<long double>& nums) {
         int j = 0;
         for(int i =0;i<nums.size();i++)
@@ -137,13 +137,13 @@ void movezeroes(vector<long double>& nums) {
     }
 
 
-// Manul: It updates the given graph by adding the edges and nodes contained in filename to the graph
-// Manul: and also returns the sorted array of newly added edges
-// Manul: IMO, there are a few problems with this function:
-// Manul: 1. Does not account for addition of edges which are incident to the 0-th node
-// Manul: 2. May give SEG fault (read the comments in the body of the function)
-// Manul: 3. Does not check if a newly added edge already exists
-// Manul: 4. does not update weights array
+// Manul-Manan: It updates the given graph by adding the edges and nodes contained in filename to the graph
+// Manul-Manan: and also returns the sorted array of newly added edges
+// Manul-Manan: IMO, there are a few problems with this function:
+// Manul-Manan: 1. Does not account for addition of edges which are incident to the 0-th node
+// Manul-Manan: 2. May give SEG fault (read the comments in the body of the function)
+// Manul-Manan: 3. Does not check if a newly added edge already exists
+// Manul-Manan: 4. does not update weights array
 vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph *g)
 {
 	ifstream finput;
@@ -151,10 +151,10 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
 	vector<pair<pair<unsigned int,unsigned int>,long double> > vect_w;
 	finput.open(filename.c_str());
 	int node,comm;
-  // Manul: count_w = number of newly added intracommunity edges
-  // Manul: conut_b = number of newly added intercommunity edges
-  // Manul: count_on = number of newly added edges between old and new nodes
-  // Manul: count_nn = number of newly added edges between new and new nodes
+  // Manul-Manan: count_w = number of newly added intracommunity edges
+  // Manul-Manan: conut_b = number of newly added intercommunity edges
+  // Manul-Manan: count_on = number of newly added edges between old and new nodes
+  // Manul-Manan: count_nn = number of newly added edges between new and new nodes
 	int count_w =0,count_b =0,count_nn =0,count_on =0, count_oo=0;
 	vector<int> N(g->nb_nodes,0);
 	vector<unsigned long long> degrees_o = g->degrees;
@@ -219,16 +219,16 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
         }
 
 	    }//end of while
-      // Manul: SEGFAULT?
-      // Manul: last edge in filename not considered?
+      // Manul-Manan: SEGFAULT?
+      // Manul-Manan: last edge in filename not considered?
 	  for(int i=1;i<N.size();i++)
 		  N[i]=N[i]+N[i-1];
     
-    // Manul: resize degrees to accommodate new nodes and fill the new elements with the same value
-    // Manul: as the sum of all degrees in the original graph
+    // Manul-Manan: resize degrees to accommodate new nodes and fill the new elements with the same value
+    // Manul-Manan: as the sum of all degrees in the original graph
 	  g->degrees.resize(N.size(),g->degrees[g->degrees.size()-1]);
 
-    // Manul: update cumulative degrees by adding the increments contained in N
+    // Manul-Manan: update cumulative degrees by adding the increments contained in N
 	  for(int i=0;i<g->degrees.size();i++)
 		  g->degrees[i]=g->degrees[i]+N[i];
 	    gettimeofday(&end3, NULL);
@@ -241,23 +241,23 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
 	double t4;
 	gettimeofday(&start4, NULL);
 
-    // Manul: sorts newly added edges by source vertices 
+    // Manul-Manan: sorts newly added edges by source vertices 
   	sort(vect.begin(),vect.end());
   	int k = g->degrees.size()-1;
 
-    // Manul: d is sum of degrees of newly added nodes, which is also equal to
-    // Manul: the number of edges from new to old nodes + 2 * (num of edges from new to new nodes) 
+    // Manul-Manan: d is sum of degrees of newly added nodes, which is also equal to
+    // Manul-Manan: the number of edges from new to old nodes + 2 * (num of edges from new to new nodes) 
   	int d=g->degrees[g->degrees.size()-1]-g->degrees[degrees_o.size()-1];
   	g->links.resize(g->links.size()+vect.size());
   	vector<int> v1(vect.size());
   	for(int i=0;i<vect.size();i++)
   		v1[i]=vect[i].second;
     
-    // Manul: since v is sorted, the last d entries of v would be of the form (x, y), where x
-    // Manul: is a newly added node. The last d entries would contain all edges between new and old nodes
-    // Manul: once, and all edges between new and new nodes twice. Hence, the below call will copy
-    // Manul: neighbours of all newly added nodes in the last d positions of the links array
-    // Manul: the new edges from old to new nodes and old to old nodes still need to be added to links
+    // Manul-Manan: since v is sorted, the last d entries of v would be of the form (x, y), where x
+    // Manul-Manan: is a newly added node. The last d entries would contain all edges between new and old nodes
+    // Manul-Manan: once, and all edges between new and new nodes twice. Hence, the below call will copy
+    // Manul-Manan: neighbours of all newly added nodes in the last d positions of the links array
+    // Manul-Manan: the new edges from old to new nodes and old to old nodes still need to be added to links
     /* Manul: Suppose the last node in the old graph was n_old, and in new graph is n_new
      * after calling below function, the links array will look like this
      * [nbrs_of_0 nbrs_of_1 ... nbrs_of_n_old garb garb ... garb nbrs_of_(n_old+1) ... nbrs_of_n_new]
@@ -266,7 +266,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
      */
   	copy(v1.end()-d,v1.end(),g->links.end()-d);
   	int p=d,q=d;
-    // Manul: Why i = 0 not considered?
+    // Manul-Manan: Why i = 0 not considered?
   	for(int i=degrees_o.size()-1;i>0;i--)
   	{
   		if((g->degrees[i]-g->degrees[i-1])==(degrees_o[i]-degrees_o[i-1]))
@@ -315,7 +315,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
          */
   		}
   	}
-    // Manul: the links array now includes all the new edges
+    // Manul-Manan: the links array now includes all the new edges
     gettimeofday(&end4, NULL);
     t4 = (double) ((end4.tv_sec -start4.tv_sec)*1000 + (end4.tv_usec- start4.tv_usec)/1000) ;
 	g->nb_nodes = g->degrees.size();
@@ -325,34 +325,34 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
     return vect;
 }
 
-// Manul: given the graph{i}.tree file as input, where i is the time step, it returns a 
-// Manul: vector of nodes contained in each community. The graph0.tree file holds the initial
-// Manul: partitioning at each level, before the first time step. The format of each such
-// Manul: file is as follows:
-// Manul: 0 [comm of 0]     |
-// Manul: 1 [comm of 1]     |  
-// Manul: 2 [comm of 2]     | renumbered comm's [0..k-1] after calling one_level on original
-// Manul: 3 [comm of 3]     | graph of n nodes
-// Manul: ...               |
-// Manul: n-1 [comm of n-1] |__________________________________________________________
-// Manul: 0 [comm of 0]     |
-// Manul: 1 [comm of 1]     |  
-// Manul: 2 [comm of 2]     | renumbered comm's [0..k2-1] after calling one_level on
-// Manul: 3 [comm of 3]     | composite graph whose nodes represent the first-level comm's
-// Manul: ...               |
-// Manul: k-1 [comm of k-1] |__________________________________________________________
-// Manul: 0 [comm of 0]     |
-// Manul: 1 [comm of 1]     |  
-// Manul: 2 [comm of 2]     | renumbered comm's [0..k3-1] after calling one_level on
-// Manul: 3 [comm of 3]     | composite graph whose nodes represent the second-level comm's
-// Manul: ...               |
-// Manul: k2-1 [comm of k-1]|__________________________________________________________
-// Manul: ...
-// Manul: 0 0
-// Manul: 1 1
-// Manul: 2 2
-// Manul: ...
-// Manul: k_l-1 k_l-1
+// Manul-Manan: given the graph{i}.tree file as input, where i is the time step, it returns a 
+// Manul-Manan: vector of nodes contained in each community. The graph0.tree file holds the initial
+// Manul-Manan: partitioning at each level, before the first time step. The format of each such
+// Manul-Manan: file is as follows:
+// Manul-Manan: 0 [comm of 0]     |
+// Manul-Manan: 1 [comm of 1]     |  
+// Manul-Manan: 2 [comm of 2]     | renumbered comm's [0..k-1] after calling one_level on original
+// Manul-Manan: 3 [comm of 3]     | graph of n nodes
+// Manul-Manan: ...               |
+// Manul-Manan: n-1 [comm of n-1] |__________________________________________________________
+// Manul-Manan: 0 [comm of 0]     |
+// Manul-Manan: 1 [comm of 1]     |  
+// Manul-Manan: 2 [comm of 2]     | renumbered comm's [0..k2-1] after calling one_level on
+// Manul-Manan: 3 [comm of 3]     | composite graph whose nodes represent the first-level comm's
+// Manul-Manan: ...               |
+// Manul-Manan: k-1 [comm of k-1] |__________________________________________________________
+// Manul-Manan: 0 [comm of 0]     |
+// Manul-Manan: 1 [comm of 1]     |  
+// Manul-Manan: 2 [comm of 2]     | renumbered comm's [0..k3-1] after calling one_level on
+// Manul-Manan: 3 [comm of 3]     | composite graph whose nodes represent the second-level comm's
+// Manul-Manan: ...               |
+// Manul-Manan: k2-1 [comm of k-1]|__________________________________________________________
+// Manul-Manan: ...
+// Manul-Manan: 0 0
+// Manul-Manan: 1 1
+// Manul-Manan: 2 2
+// Manul-Manan: ...
+// Manul-Manan: k_l-1 k_l-1
 vector<vector<int> >find_NodCom(string filename,int n)
  {
 	n2c.resize(n);
@@ -381,32 +381,32 @@ vector<vector<int> >find_NodCom(string filename,int n)
          }
     }
     finput.close();
-    // Manul: now, levels[i][j] contains the (renumbered) comm. of the j-th node at the i-th level
+    // Manul-Manan: now, levels[i][j] contains the (renumbered) comm. of the j-th node at the i-th level
     
-    // Manul: the number of distinct comm. at the i-th level is the same as the number of
-    // Manul: nodes in the graph just before carrying out the (i+1)-th level
+    // Manul-Manan: the number of distinct comm. at the i-th level is the same as the number of
+    // Manul-Manan: nodes in the graph just before carrying out the (i+1)-th level
     nod_com.resize(levels[1].size());
     for(int j=0;j<levels[0].size();j++)
 	{
 	  	nod_com[levels[0][j]].push_back(j);
 	}
-  // Manul: nod_com[k] contains all the nodes in the comm. k at the first level, where 
-  // Manul: k is in [0, levels[1].size()-1]
+  // Manul-Manan: nod_com[k] contains all the nodes in the comm. k at the first level, where 
+  // Manul-Manan: k is in [0, levels[1].size()-1]
 	nod_com_t = nod_com;
     nod_com.clear();
     vector<vector<int> >(nod_com).swap(nod_com);
-    // Manul: iterating over levels (we don't need to consider the last level, as it maps
-    // Manul: each node to a singleton comm. containing only itself)
+    // Manul-Manan: iterating over levels (we don't need to consider the last level, as it maps
+    // Manul-Manan: each node to a singleton comm. containing only itself)
     for(int i=1;i<levels.size()-1;i++)
     {
-      // Manul: number of distinct comm's at level i is same as no. of nodes at level i+1
+      // Manul-Manan: number of distinct comm's at level i is same as no. of nodes at level i+1
 	   nod_com.resize(levels[i+1].size());
-	   // Manul: iterating over nodes of level i
+	   // Manul-Manan: iterating over nodes of level i
      for(int j=0;j<levels[i].size();j++)
 	   {
-          // Manul: j-th node of level i belongs to comm. levels[i][j]. So, to nod_com[levels[i][j]],
-          // Manul: we should add the entire set of original nodes represented by the composite node j,
-          // Manul: which is contained in nod_com_t[j]
+          // Manul-Manan: j-th node of level i belongs to comm. levels[i][j]. So, to nod_com[levels[i][j]],
+          // Manul-Manan: we should add the entire set of original nodes represented by the composite node j,
+          // Manul-Manan: which is contained in nod_com_t[j]
           nod_com[levels[i][j]].insert(nod_com[levels[i][j]].end(), nod_com_t[j].begin(), nod_com_t[j].end());
 	   }
 	  nod_com_t = nod_com;
@@ -415,15 +415,15 @@ vector<vector<int> >find_NodCom(string filename,int n)
     nod_com.clear();
     vector<vector<int> >(nod_com).swap(nod_com);
 
-    // Manul: nod_com_t now contains the original nodes assigned to each final comm (obtained after the final level) 
+    // Manul-Manan: nod_com_t now contains the original nodes assigned to each final comm (obtained after the final level) 
     return nod_com_t;
  }
 
-// Manul: updates given graph by deleting the edges mentioned in filename from graph
-// Manul: and returns sorted list of edges removed
-// Manul: note: if (a, b) is present in filename, removes both (a, b) and (b, a) from graph,
-// Manul: if these edges exist. But in the returned vector, only (a, b) is present.
-// Manul: Does not properly update the weights array, and does not remove isolated nodes
+// Manul-Manan: updates given graph by deleting the edges mentioned in filename from graph
+// Manul-Manan: and returns sorted list of edges removed
+// Manul-Manan: note: if (a, b) is present in filename, removes both (a, b) and (b, a) from graph,
+// Manul-Manan: if these edges exist. But in the returned vector, only (a, b) is present.
+// Manul-Manan: Does not properly update the weights array, and does not remove isolated nodes
 vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph *g)
 {
 	ifstream finput;
@@ -459,16 +459,16 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
                 //remove the edge (start,end) (in links and weights we should find start and end and erase them)
             if(start >  g->nb_nodes-1 ) cout<<"wrong start deletion"<<endl;
             else if(start == g->nb_nodes-1 ){
-              // Manul: find the destination node in the segment of links containing neighbours of source
+              // Manul-Manan: find the destination node in the segment of links containing neighbours of source
                 it = find(g->links.begin() + g->degrees[start-1], g->links.end(), des);//check does not exist
                 if(g->degrees[start] != g->degrees[start-1] && it != g->links.end())//if this edge exists
                   {
                      flag = true;
-                     // Manul: set the dest corresponding to source to -1
+                     // Manul-Manan: set the dest corresponding to source to -1
                     *it = -1;
                     if (type == WEIGHTED)
                        {
-                         // Manul: subtract the weight read from file from the weight of the edge to be deleted. Why this is done is a mystery
+                         // Manul-Manan: subtract the weight read from file from the weight of the edge to be deleted. Why this is done is a mystery
                            g->weights[distance(g->links.begin(),it)] -= w;
                            g->total_weight-=w;
                        }
@@ -481,7 +481,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 
             }
             else if(start == 0){
-              // Manul: Issue: why is 1 subtracted from the the upper limit?
+              // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
                 it = find(g->links.begin(), g->links.begin()+g->degrees[start]-1, des);
                 if(g->degrees[start] != 0 &&  distance(g->links.begin(),it)<g->degrees[start])//   it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
@@ -501,7 +501,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 
             }
             else{
-              // Manul: Issue: why is 1 subtracted from the the upper limit?
+              // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
                 it = find(g->links.begin()+g->degrees[start-1], g->links.begin()+ g->degrees[start]-1, des);
                 if(g->degrees[start] != g->degrees[start-1] && distance(g->links.begin()+g->degrees[start-1],it) < (g->degrees[start]-g->degrees[start-1]))//it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
@@ -521,7 +521,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 
             }
 
-            // Manul: uptil now (start, des) was deleted, now repeat same procedure with (des, start)
+            // Manul-Manan: uptil now (start, des) was deleted, now repeat same procedure with (des, start)
             if(des >  g->nb_nodes-1 ) cout<<"wrong end deletion"<<endl;
             else if(des == g->nb_nodes -1){
                   it = find(g->links.begin() + g->degrees[des-1], g->links.end(), start);//check does not exist
@@ -543,7 +543,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 
             }
             else if(des == 0){
-              // Manul: Issue: why is 1 subtracted from the the upper limit?
+              // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
                   it = find(g->links.begin(), g->links.begin()+g->degrees[des]-1, start);
                 if(g->degrees[des] != 0 &&  distance(g->links.begin(),it)<g->degrees[des])//   it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
@@ -564,7 +564,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 
             }
             else{
-              // Manul: Issue: why is 1 subtracted from the the upper limit?
+              // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
                   it = find(g->links.begin()+g->degrees[des-1], g->links.begin()+ g->degrees[des]-1, start);
                 if(g->degrees[des] != g->degrees[des-1] && distance(g->links.begin()+g->degrees[des-1],it) < (g->degrees[des]-g->degrees[des-1]))//it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
@@ -584,12 +584,12 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
                   }
             }
 
-            // Manul: flag is true if the edge (start, des) or (des, start) exists
+            // Manul-Manan: flag is true if the edge (start, des) or (des, start) exists
             if(flag)//if the edges exists then reduce the degrees
             {
                 N[start]++;//we increase one when we remove an edge
                 N[des]++;
-                // Manul: why (des, start) is not added?
+                // Manul-Manan: why (des, start) is not added?
                 vect.push_back(make_pair(start, des));
             }
 
@@ -600,7 +600,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 	   	if(g->links[i]==-1) ++cl;
 	  }
     
-    // Manul: this removes all -1's from links array and resizes it after removal
+    // Manul-Manan: this removes all -1's from links array and resizes it after removal
 	    moveNegativeOnes(g->links);
 
         for(int i=1;i<N.size();i++)
@@ -609,7 +609,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 		  g->degrees[i] = g->degrees[i]-N[i];
         gettimeofday(&end3, NULL);
         t3 = (double) ((end3.tv_sec - start3.tv_sec)*1000 + (end3.tv_usec- start3.tv_usec)/1000) ;
-     } // Manul: end of if(finput.isopen())
+     } // Manul-Manan: end of if(finput.isopen())
      finput.close();
      N.clear();
      vector<int>(N).swap(N);
@@ -632,8 +632,8 @@ vector<int> nodToEval_b(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *lou
   return louvain->qual->R;
 }
 
-// Manul: compute the set of nodes to be evaluated by Louvain when some edges (contained in vect) are
-// Manul: added to the graph at the current time step
+// Manul-Manan: compute the set of nodes to be evaluated by Louvain when some edges (contained in vect) are
+// Manul-Manan: added to the graph at the current time step
 vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *louvain, int type, vector<int> n2c,vector<pair<unsigned int,unsigned int> > vect, int nb_nodes)
 {
     louvain->qual->R.clear();
@@ -649,25 +649,25 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
     vector<int> flag_comm(g->nb_nodes,0);
     double gain_time = 0, neig_time = 0, comm_time =0;
 
-    // Manul: iterating over all source nodes of the newly added edges. vect is already sorted wrt source nodes 
+    // Manul-Manan: iterating over all source nodes of the newly added edges. vect is already sorted wrt source nodes 
     while(i<vect.size())
 	{
-      // Manul: the neigh comm of source node which gives maximum gain upon moving the source node to it
+      // Manul-Manan: the neigh comm of source node which gives maximum gain upon moving the source node to it
     	  comm_to = -1;
     	  int flag =0;
-		  unsigned int start, end, max_end; // Manul: max_end is the target node corr. to which gain is maximum
+		  unsigned int start, end, max_end; // Manul-Manan: max_end is the target node corr. to which gain is maximum
 		  start = vect[i].first;
 		  comm2 = n2c[start];
 		  struct timeval sTime1, eTime1;
 
-      // Manul: iterating over all target nodes corresponding to source node 'start'
+      // Manul-Manan: iterating over all target nodes corresponding to source node 'start'
 		  while(start == vect[i].first)
 		  {
 			  end = vect[i].second;
 			  comm1 = n2c[end];
 			  if(comm1==comm2)
 			  {
-          // Manul: if edge added is intracommunity, do nothing
+          // Manul-Manan: if edge added is intracommunity, do nothing
 				  i++;
 				  continue;
 			  }
@@ -675,8 +675,8 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
 			  {
 				 if(start >= nb_nodes && end >= nb_nodes)
 				  {
-            // Manul: this condition checks that whether the current edge is between two new nodes
-            // Manul: and if so, add start to the node set for evaulation and continue
+            // Manul-Manan: this condition checks that whether the current edge is between two new nodes
+            // Manul-Manan: and if so, add start to the node set for evaulation and continue
 		  			  Re[start] = 1;
 		  			  i++;
 		  			  continue;
@@ -690,18 +690,18 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
 						  flag =1;
 						  gettimeofday(&sTime1, NULL);
 						  w_degree1 = g->weighted_degree(start);
-              // Manul: Issue: louvain->neigh_comm[start] has nowhere been called. So, neigh_weight won't contain the expected values. Also, start has not been removed from its current comm (comm2) yet, so calculating gain produced by addition of start to comm2 does not make sense. Also, why w_degree1 is being subtracted in third argument?
+              // Manul-Manan: Issue: louvain->neigh_comm[start] has nowhere been called. So, neigh_weight won't contain the expected values. Also, start has not been removed from its current comm (comm2) yet, so calculating gain produced by addition of start to comm2 does not make sense. Also, why w_degree1 is being subtracted in third argument?
 						  gain_start_to_comm2 = louvain->qual->gain(start, comm2, louvain->neigh_weight[comm2]-w_degree1, w_degree1);
 						  gettimeofday(&eTime1, NULL);
 						  gain_time += (double) ((eTime1.tv_sec -sTime1.tv_sec )*1000 + (eTime1.tv_usec -  sTime1.tv_usec)/1000);
 					  }
 
 					  gettimeofday(&sTime1, NULL);
-            // Manul: Issue: neigh_weight does not contain expected values 
+            // Manul-Manan: Issue: neigh_weight does not contain expected values 
 					  gain_start_to_comm1 = louvain->qual->gain(start, comm1, louvain->neigh_weight[comm1], w_degree1);
 					  gettimeofday(&sTime1, NULL);
 					  gain_time += (double) ((eTime1.tv_sec -sTime1.tv_sec )*1000 + (eTime1.tv_usec -  sTime1.tv_usec)/1000);
-            // Manul: if moving start to neigh comm yields greater gain than staying in its own comm
+            // Manul-Manan: if moving start to neigh comm yields greater gain than staying in its own comm
 					  if(gain_start_to_comm1 > gain_start_to_comm2)
 					  {
 						  if(max < gain_start_to_comm1)
@@ -712,19 +712,19 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
 						  }
 					  }
 					  i++;
-			       } // Manul: end else
-		       } // Manul: end else
-	      } // Manul: end inner while (iteration over targets)
+			       } // Manul-Manan: end else
+		       } // Manul-Manan: end else
+	      } // Manul-Manan: end inner while (iteration over targets)
 
 		  if(comm_to == -1)
 		  {
-        // Manul: no positive gain can be obtained by moving start to one of the comm. of its target
-        // Manul: nodes. Thus, proceed to the next source node
+        // Manul-Manan: no positive gain can be obtained by moving start to one of the comm. of its target
+        // Manul-Manan: nodes. Thus, proceed to the next source node
 			 continue;
 		  }
 		  else
-		  { // Manul: Issue: it is not checked that moving start to max_end's comm yields greater gain
-        // Manul: than moving max_end to start's comm
+		  { // Manul-Manan: Issue: it is not checked that moving start to max_end's comm yields greater gain
+        // Manul-Manan: than moving max_end to start's comm
         //start is going to comm_to
 			       gettimeofday(&sTime1,NULL);
 				   Re[start]=1;
@@ -738,8 +738,8 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
 						for (int k = 0; k < (louvain->qual->g).nb_neighbors(start); k++)
 						{
 					      int nb = ngbr[k];
-                // Manul: checking if the k-th neighbour of start belongs to same comm as max_end
-                // Manul: Issue: shouldn't it be comm_to?
+                // Manul-Manan: checking if the k-th neighbour of start belongs to same comm as max_end
+                // Manul-Manan: Issue: shouldn't it be comm_to?
 						  if (louvain->qual->n2c[ngbr[k]] != comm1)
 						  {
 							  Re[nb]=1;
@@ -754,10 +754,10 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
 				   neig_time += (double) ((eTime1.tv_sec -sTime1.tv_sec )*1000 + (eTime1.tv_usec - sTime1.tv_usec)/1000);
 				   //add all nodes in comm1
 				   gettimeofday(&sTime1,NULL);
-           // Manul: this condition handles the case when new edge is from old node to new node
+           // Manul-Manan: this condition handles the case when new edge is from old node to new node
 					if(comm1>nodes_in_comm.size()-1)//end is a single new node as a community
 					{
-            // Manul: Issue: why are we not adding max_end to R in this case?
+            // Manul-Manan: Issue: why are we not adding max_end to R in this case?
 						continue;
 					}
 
@@ -782,7 +782,7 @@ vector<int> nodToEval_add(vector<vector<int> > nodes_in_comm,Graph *g,Louvain *l
 				   }
 
 
-	} // Manul: end of outer while (iteration over vect)
+	} // Manul-Manan: end of outer while (iteration over vect)
    int reeval_count=0;
    for(int i=0;i<Re.size();i++)
    {
@@ -1048,12 +1048,12 @@ main(int argc, char **argv) {
   Graph g(filename, filename_w, type);
   Graph gr = g;
   int n = gr.nb_nodes;
-  // Manul: this will create a new quality class (modularity by default), and initialize it with graph
-  // Manul: g. Initially, each node is a community by itself (q->n2c[i] == i)
+  // Manul-Manan: this will create a new quality class (modularity by default), and initialize it with graph
+  // Manul-Manan: g. Initially, each node is a community by itself (q->n2c[i] == i)
   init_quality(&g, nb_calls);
 
-  // Manul: R is the set of nodes to be evaluated by Louvain. For time step 0, all nodes should be
-  // Manul: evaluated
+  // Manul-Manan: R is the set of nodes to be evaluated by Louvain. For time step 0, all nodes should be
+  // Manul-Manan: evaluated
   for(int i=0; i< q->size;i++)
   {
  	  //assign all nodes to R for time t0
@@ -1064,15 +1064,15 @@ main(int argc, char **argv) {
   if (verbose)
     cerr << endl << "Computation of communities with the " << q->name << " quality function" << endl << endl;
 
-  // Manul: -1 means do as many passes at a given level as required, precision is the threshold for gain below which no more passes will be done 
+  // Manul-Manan: -1 means do as many passes at a given level as required, precision is the threshold for gain below which no more passes will be done 
   Louvain c(-1, precision, q);
   if (filename_part!=NULL)
-    // Manul: TODO: initial partition file at the start is not handled currently with GPU louvain
+    // Manul-Manan: TODO: initial partition file at the start is not handled currently with GPU louvain
     c.init_partition(filename_part);
   bool improvement = true;
   // cout << "Gpu start" << endl;
 
-  // Manul: quality of initial partition
+  // Manul-Manan: quality of initial partition
   long double quality = (c.qual)->quality();
   long double new_qual;
   int level = 0;
@@ -1092,7 +1092,7 @@ main(int argc, char **argv) {
 
   /**********Commented*****************/
   // GTIC("Initial partitioning");   // Manul's Change
-  // // Manul: computation of comm's before the first time step (before any changes happen)
+  // // Manul-Manan: computation of comm's before the first time step (before any changes happen)
   // do {
   //   GTIC("Overall level " + to_string(level));    // Manul's Change
   //   if (verbose) {
@@ -1104,16 +1104,16 @@ main(int argc, char **argv) {
   //   }
 
   //   GTIC("one_level");  // Manul's Change
-  //   // Manul: carry out one level (consisting of one or more passes). The passes stop if
-  //   // Manul: either no nodes were moved in the last pass, or the gain in the last pass 
-  //   // Manul: was less than the specified threshold. Improvement is true if at least one of 
-  //   // Manul: the nodes was moved and is false if no nodes were moved. In the latter case, we  
-  //   // Manul: do not need to compute the next level
+  //   // Manul-Manan: carry out one level (consisting of one or more passes). The passes stop if
+  //   // Manul-Manan: either no nodes were moved in the last pass, or the gain in the last pass 
+  //   // Manul-Manan: was less than the specified threshold. Improvement is true if at least one of 
+  //   // Manul-Manan: the nodes was moved and is false if no nodes were moved. In the latter case, we  
+  //   // Manul-Manan: do not need to compute the next level
   //   improvement = c.one_level();
 
   //   GTOC;                 // Manul's Change
 
-  //   // Manul: now some of the nodes may have been reassigned to different comm's, but graph is the same
+  //   // Manul-Manan: now some of the nodes may have been reassigned to different comm's, but graph is the same
 
   //   new_qual = (c.qual)->quality();
   //   if (++level==display_level)
@@ -1123,24 +1123,24 @@ main(int argc, char **argv) {
 
 
   //   GTIC("part2graph");  // Manul's Change
-  //   // Manul: create a new graph whose nodes represent the computed comm's. If no nodes were moved
-  //   // Manul: and each node still forms a singleton comm, this would not change the graph
+  //   // Manul-Manan: create a new graph whose nodes represent the computed comm's. If no nodes were moved
+  //   // Manul-Manan: and each node still forms a singleton comm, this would not change the graph
   //   g = c.partition2graph_binary();
   //   GTOC;      // Manul's Change
 
-  //   // Manul: a completely new quality function corr. to the new graph, with each node as a singleton comm
+  //   // Manul-Manan: a completely new quality function corr. to the new graph, with each node as a singleton comm
   //   init_quality(&g, nb_calls);
   //   nb_calls++;
 
-  //   // Manul: a new value for q requires a new Louvain object with the new q
+  //   // Manul-Manan: a new value for q requires a new Louvain object with the new q
   //   c = Louvain(-1, precision, q);
   //   quality = new_qual;
   //   if (filename_part!=NULL && level==1)
-  //   // Manul: this is done because if an custom initial partitioning was provided, then it may have 
-  //   // Manul: happened that no further movement of nodes was done by one_level on top of the initial
-  //   // Manul: custom paritioning, and so improvement would be false in such a case, but partition2graph_binary 
-  //   // Manul: would give a different graph than the original, and so we would like to continue the 
-  //   // Manul: procedure with this new graph
+  //   // Manul-Manan: this is done because if an custom initial partitioning was provided, then it may have 
+  //   // Manul-Manan: happened that no further movement of nodes was done by one_level on top of the initial
+  //   // Manul-Manan: custom paritioning, and so improvement would be false in such a case, but partition2graph_binary 
+  //   // Manul-Manan: would give a different graph than the original, and so we would like to continue the 
+  //   // Manul-Manan: procedure with this new graph
   //     improvement=true;
   //   GTOC;   // Manul's Change
   // } while(improvement);
@@ -1156,7 +1156,7 @@ main(int argc, char **argv) {
   int count_del = 0;
   vector<int>::iterator it,it2;
   vector<int> nodes_to_check;
-  // Manul: it2 is never being used anywhere
+  // Manul-Manan: it2 is never being used anywhere
   it2 = max_element(q->n2c.begin(), q->n2c.end());
   vector<int> Re;
   vector<pair<unsigned int,unsigned int> > vect_new_edges;
@@ -1195,8 +1195,8 @@ main(int argc, char **argv) {
 
       /**********Commented*****************/
       // GTIC("find_NodCom del");   // Manul's Change
-      // // Manul: after the next line, nodes_in_comm[i] is the set of all original nodes
-      // // Manul: contained in community i (based on the last level of the last time step)
+      // // Manul-Manan: after the next line, nodes_in_comm[i] is the set of all original nodes
+      // // Manul-Manan: contained in community i (based on the last level of the last time step)
       // nodes_in_comm = find_NodCom(s,nb_nodes_b);
       // GTOC;   // Manul's Change
       /**********Commented*****************/
@@ -1246,7 +1246,7 @@ main(int argc, char **argv) {
 	  {
 
     GTIC("buildNew_del"); // Manul's Change
-      // Manul: modify gr by deleting the edges specified in file 'name'
+      // Manul-Manan: modify gr by deleting the edges specified in file 'name'
 		vect_new_edges = buildNewGraph_del(name,&gr);
     GTOC;    // Manul's Change
 
@@ -1255,16 +1255,16 @@ main(int argc, char **argv) {
 		vector<int>::const_iterator it;
 		it = max_element(n2c.begin(), n2c.end());
 
-    // Manul: n_comm is the total comm's formed after the last level of the last time step
+    // Manul-Manan: n_comm is the total comm's formed after the last level of the last time step
 		int n_comm = *it +1;
 
-    // Manul: initialize quality on the new graph (with deleted edges)
+    // Manul-Manan: initialize quality on the new graph (with deleted edges)
 		init_quality(&g1, nb_calls);
 		nb_calls++;
 		Louvain c1(-1, precision, q);//call louvain constructor
 
-    // Manul: n2c contains the comm corr. to each original node as per the last level of the last time step
-    // Manul: this should be used as the initial partition at the beginning of this time step
+    // Manul-Manan: n2c contains the comm corr. to each original node as per the last level of the last time step
+    // Manul-Manan: this should be used as the initial partition at the beginning of this time step
 		c1.init_partition_v(n2c);
 		q->n2c = n2c;
 		struct timeval sTime2, eTime2;
@@ -1272,14 +1272,14 @@ main(int argc, char **argv) {
 		//Re = nodToEval_b(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
 
     GTIC("nodToEval_del");  // Manul's Change
-    // Manul: compute the set of nodes to be re-evaulated by using the new graph (with deleted edges), and
-    // Manul: the partition computed by the last level of the last time step
+    // Manul-Manan: compute the set of nodes to be re-evaulated by using the new graph (with deleted edges), and
+    // Manul-Manan: the partition computed by the last level of the last time step
 		Re = nodToEval_del(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
     GTOC;    // Manul's Change
 
       /**********Commented*****************/
-      // // Manul: if re-evaluation set is empty, simply copy graph.tree file for prev time step
-      // // Manul: to the graph.tree file for the current time step
+      // // Manul-Manan: if re-evaluation set is empty, simply copy graph.tree file for prev time step
+      // // Manul-Manan: to the graph.tree file for the current time step
       //   if((c1.qual)->R.size() == 0)//if  deletion did not make any effect at time step j!=0
       //    {
       //       s = "graph"+my2::to_string(count_del)+".tree";
@@ -1324,7 +1324,7 @@ main(int argc, char **argv) {
 
       // Manul start
       GTIC("partitioning after del");
-      // Manul: isolated nodes are not removed after deletion, and n2c is perfectly valid after deletion
+      // Manul-Manan: isolated nodes are not removed after deletion, and n2c is perfectly valid after deletion
       gpuLouvain(&c1, n2c, true);
       GTOC;
       // Manul end
@@ -1349,8 +1349,8 @@ main(int argc, char **argv) {
 			// 	if (++level==display_level)
 			// 		(c1.qual)->g.display();
 			// 	if (display_level==-1)
-      //     // Manul: this method appends to the graph{count_del}.tree file the renumbered comm
-      //     // Manul: associated with each node at the current level
+      //     // Manul-Manan: this method appends to the graph{count_del}.tree file the renumbered comm
+      //     // Manul-Manan: associated with each node at the current level
 			// 		c1.display_partition(count_del);
         
       //   GTIC("part2graph");   // Manul's Change
@@ -1370,7 +1370,7 @@ main(int argc, char **argv) {
 
 			gettimeofday(&level_time_e,NULL);
 			level_time += (double) ((level_time_e.tv_sec -level_time_s.tv_sec )*1000 + (level_time_e.tv_usec -  level_time_s.tv_usec)/1000);
-      // Manul: new_qual would not contain correct value if GPU louvain is used
+      // Manul-Manan: new_qual would not contain correct value if GPU louvain is used
 			// cerr << "\t new_qual= "<<new_qual << endl;
 
 		}
@@ -1472,14 +1472,14 @@ main(int argc, char **argv) {
 	  	it = max_element(n2c.begin(), n2c.end());
 	  	n_comm = *it +1;
 
-      // Manul: since new nodes may be added, resizing is necessary
+      // Manul-Manan: since new nodes may be added, resizing is necessary
 	  	n2c.resize(gr.nb_nodes);//resize the n2c at the next time step
-      // Manul: iterating over the newly added nodes (if any)
+      // Manul-Manan: iterating over the newly added nodes (if any)
 	  	for(int i=nb_nodes_b;i<nb_nodes_a;i++)
 	  	{
 	  		pair<vector<int>::iterator, vector<long double>::iterator > p = gr.neighbors(i);
-        // Manul: if the node has only one neighbour and that nbr is an old node, assign
-        // Manul: this new node to the comm of the old nbr node
+        // Manul-Manan: if the node has only one neighbour and that nbr is an old node, assign
+        // Manul-Manan: this new node to the comm of the old nbr node
 	  		if((gr.degrees[i]-gr.degrees[i-1] == 1) && (*(p.first) < nb_nodes_b)) //if the node has just one neighbor assign it to the community of its neighbor
 	  		{
 	  			n2c[i] = n2c[*(p.first)];
@@ -1493,8 +1493,8 @@ main(int argc, char **argv) {
 
       cout << "Point 4" << endl;
 
-      // Manul: Issue: where is n2c being updated? If the deletion of edges leads to changes
-      // Manul: in the comm's, n2c must be updated before being used for edge addition
+      // Manul-Manan: Issue: where is n2c being updated? If the deletion of edges leads to changes
+      // Manul-Manan: in the comm's, n2c must be updated before being used for edge addition
 	  	init_quality(&g1, nb_calls);
 	  	nb_calls++;
 	  	Louvain c1(-1, precision, q);//call louvain constructor
@@ -1513,7 +1513,7 @@ main(int argc, char **argv) {
       cout << "Point 6" << endl;
     
     /**********Commented*****************/
-    // // Manul: Issue: what does this check accomplish?
+    // // Manul-Manan: Issue: what does this check accomplish?
 	  // if(*max_element(Re.begin(),Re.end()) != 0)
     //   {
     //         //s.erase(remove_if(s.begin(), s.end(), static_cast<int(*)(int)>(isspace)), s.end());

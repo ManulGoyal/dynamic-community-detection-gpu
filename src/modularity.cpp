@@ -73,14 +73,14 @@ Modularity::quality() {
 	//cerr<<"Debug...start of modularity"<<endl;
   long double q  = 0.0L;
 
-  // Manul: g.total_weight is twice the sum of weights of all edges in graph
+  // Manul-Manan: g.total_weight is twice the sum of weights of all edges in graph
   long double m2 = g.total_weight;
 
-  // Manul: q = (1/m)*sum_over_all_communities_i(in[i] - tot[i]*tot[i] / m)
+  // Manul-Manan: q = (1/m)*sum_over_all_communities_i(in[i] - tot[i]*tot[i] / m)
 
   for (int i=0 ; i<size ; i++) {
-    // Manul: since 'size' is the number of nodes, tot[i] > 0.0L is used to check whether i
-    // Manul: represents a community or not (since not all i in [0, size) represent a comm)
+    // Manul-Manan: since 'size' is the number of nodes, tot[i] > 0.0L is used to check whether i
+    // Manul-Manan: represents a community or not (since not all i in [0, size) represent a comm)
     if (tot[i] > 0.0L)
       q += in[i] - (tot[i]*tot[i]) / m2;
   }

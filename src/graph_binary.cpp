@@ -178,7 +178,7 @@ Graph::add_selfloops() {//add selfloops to each node the weight of each loop is
   links = aux_links;//new links included self loops for each node
   degrees = aux_deg;//new comulative degree, each node now has one more link 
   
-  // Manul: This will be wrong if some nodes already have self loops
+  // Manul-Manan: This will be wrong if some nodes already have self loops
   nb_links += (unsigned long long)nb_nodes;// for each node we have one more link 
 }
 

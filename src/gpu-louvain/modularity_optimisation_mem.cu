@@ -452,7 +452,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
 	computeEdgesSum<<<blocksNumber(V, WARP_SIZE), dim3{WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE}>>>(deviceStructures);
     HANDLE_ERROR(cudaMemcpy(hostStructures.edgesIndex, deviceStructures.edgesIndex,(V + 1) * (sizeof(int)), cudaMemcpyDeviceToHost));
 
-	// Manul: TODO: Check if it works
+	// Manul-Manan: TODO: Check if it works
 	// deviceStructures.partition = R_on_gpu.first;
 	
 	int *partition = deviceStructures.partition;

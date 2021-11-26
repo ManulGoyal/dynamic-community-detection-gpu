@@ -84,12 +84,12 @@ Louvain::init_partition(char * filename) //it gets the file containing nodes and
       neigh_comm(node);
      // cerr<<"neigh_weight["<<node<<"]: "<<neigh_weight[node]<<endl;
 
-      // Manul: neigh_weight[old_comm] holds the sum of edge weights from node to other nodes
-      // Manul: in the comm. in which node belongs
+      // Manul-Manan: neigh_weight[old_comm] holds the sum of edge weights from node to other nodes
+      // Manul-Manan: in the comm. in which node belongs
       qual->remove(node, old_comm, neigh_weight[old_comm]);
       
 
-      // Manul: this loop checks whether comm is one of the nbring comm's of node
+      // Manul-Manan: this loop checks whether comm is one of the nbring comm's of node
       
       int i=0;
       for (i=0 ; i<neigh_last ; i++) 
@@ -112,7 +112,7 @@ Louvain::init_partition(char * filename) //it gets the file containing nodes and
   finput.close();
 }
 
-// Manul: initialize communities such that the i-th node belongs to comm no. v[i]
+// Manul-Manan: initialize communities such that the i-th node belongs to comm no. v[i]
 void
 Louvain::init_partition_v(vector<int> v) //it gets the file containing nodes and comms and use this partition instead of trivial partition
 {
@@ -150,18 +150,18 @@ Louvain::init_partition_v(vector<int> v) //it gets the file containing nodes and
   }
 
 
-// Manul: calculates the sum of edge weights from node to each neighbouring community of node
+// Manul-Manan: calculates the sum of edge weights from node to each neighbouring community of node
 //gives the "neighbor_pos" for name of neighbr comm and "neigh_weight" for the weight of these comm  
 void
 Louvain::neigh_comm(int node) {//node has #neigh_last comm neighbors
 
-  // Manul: neigh_last is the current number of nbring comm's of node (including comm of node itself)
-  // Manul: neigh_pos[i] is the community number of the i-th nbring comm of node
-  // Manul: neigh_weight[k] is the sum of edge weights from node to community number k
+  // Manul-Manan: neigh_last is the current number of nbring comm's of node (including comm of node itself)
+  // Manul-Manan: neigh_pos[i] is the community number of the i-th nbring comm of node
+  // Manul-Manan: neigh_weight[k] is the sum of edge weights from node to community number k
 
  // cerr<<"neigh_last: "<<neigh_last<<endl;
-  // Manul: This loop resets the weights calculated during the last invocation of this function
-  // Manul: to -1, so that weights can be recalculated for the current 'node'
+  // Manul-Manan: This loop resets the weights calculated during the last invocation of this function
+  // Manul-Manan: to -1, so that weights can be recalculated for the current 'node'
   for (int i=0 ; i<neigh_last ; i++)// assign -1 to weight of comm for all neighbor comm of node
     neigh_weight[neigh_pos[i]]=-1;
   
@@ -170,8 +170,8 @@ Louvain::neigh_comm(int node) {//node has #neigh_last comm neighbors
   pair<vector<int>::iterator, vector<long double>::iterator> p = (qual->g).neighbors(node);//
   int deg = (qual->g).nb_neighbors(node);
 
-  // Manul: 0-th nbring comm of node is the comm in which the node belongs
-  // Manul: neigh_weight[0] does not include weight of self loop on node
+  // Manul-Manan: 0-th nbring comm of node is the comm in which the node belongs
+  // Manul-Manan: neigh_weight[0] does not include weight of self loop on node
 
   neigh_pos[0] = qual->n2c[node];//current comm node is in 
   neigh_weight[neigh_pos[0]] = 0;//assign zero to current comm of node 
@@ -181,7 +181,7 @@ Louvain::neigh_comm(int node) {//node has #neigh_last comm neighbors
     int neigh  = *(p.first+i);//ith nighbor of node
     int neigh_comm = qual->n2c[neigh];//ith neighboe comm
 
-    // Manul: weight of edge from node to its i-th neighbor
+    // Manul-Manan: weight of edge from node to its i-th neighbor
     long double neigh_w = ((qual->g).weights.size()==0)?1.0L:*(p.second+i);//ith neighbor comm weight
     
     if (neigh!=node) {;
@@ -195,11 +195,11 @@ Louvain::neigh_comm(int node) {//node has #neigh_last comm neighbors
     }
   }
 
-  // Manul: neigh_pos is now of the size neigh_last, and holds the numbers of all the nbring
-  // Manul: comm's of node, including the comm of node itself (at index 0)
+  // Manul-Manan: neigh_pos is now of the size neigh_last, and holds the numbers of all the nbring
+  // Manul-Manan: comm's of node, including the comm of node itself (at index 0)
 }
 
-// Manul: deletes empty comm's and renumbers them as 0, 1, ... and then displays the graph of renumbered comm's (the renumbering is not permanent yet, done only for display purposes) 
+// Manul-Manan: deletes empty comm's and renumbers them as 0, 1, ... and then displays the graph of renumbered comm's (the renumbering is not permanent yet, done only for display purposes) 
 //after pass 1 weneed to remove comm with zero nodes inside and renumber he comms, this function will do that 
 //this will print all neighbor comms 
 void
@@ -230,8 +230,8 @@ Louvain::partition2graph()
   }
 }
 
-// Manul: deletes empty comm's and renumbers them as 0, 1, ... and then outputs to file the renumbered comm
-// Manul: number for each node (the renumbering is not permanent yet, done only for output to file purposes) 
+// Manul-Manan: deletes empty comm's and renumbers them as 0, 1, ... and then outputs to file the renumbered comm
+// Manul-Manan: number for each node (the renumbering is not permanent yet, done only for output to file purposes) 
 //sane as partition2graph just print each node and its new name comm(delete those partition that have no node anymore, and renumber comms
 void
 Louvain::display_partition(int count)
@@ -256,7 +256,7 @@ Louvain::display_partition(int count)
   ofile.close();
 }
 
-// Manul: deletes empty comm's and renumbers them as 0, 1, ... and then creates a graph of renumbered comm's
+// Manul-Manan: deletes empty comm's and renumbers them as 0, 1, ... and then creates a graph of renumbered comm's
 Graph
 Louvain::partition2graph_binary() //this is for making new graph for new pass
 {
@@ -295,9 +295,9 @@ Louvain::partition2graph_binary() //this is for making new graph for new pass
 
     int size_c = comm_nodes[comm].size();
 
-    // Manul: each comm (a node in the new graph) has weight equal to count of original nodes in the comm
-    // Manul: for ex, 1st level comm C1 (2 nodes) may be moved to comm of 1st level comm C2 (3 nodes), the resulting
-    // Manul: 2nd level comm will have 2 1st level comm's C1 and C2, and its weight will be 2 + 3 = 5
+    // Manul-Manan: each comm (a node in the new graph) has weight equal to count of original nodes in the comm
+    // Manul-Manan: for ex, 1st level comm C1 (2 nodes) may be moved to comm of 1st level comm C2 (3 nodes), the resulting
+    // Manul-Manan: 2nd level comm will have 2 1st level comm's C1 and C2, and its weight will be 2 + 3 = 5
     g2.assign_weight(comm, comm_weight[comm]);//each comm is a node now assign weight of comm to comm as a node to the  new graph 
 
     for (int node=0 ; node<size_c ; node++) 
@@ -344,8 +344,8 @@ Louvain::one_level() {
   /*nzarayeneh 1st chamge*/
   //cerr<< endl<<"qual->R.size()= "<<qual->R.size()<<endl<< "qual->size= "<< qual->size <<endl;
 
-  // Manul: if the set of nodes to be processed (R) contains all nodes, shuffle the order in which the
-  // Manul: nodes should be processed, otherwise, the nodes should be processed according to R
+  // Manul-Manan: if the set of nodes to be processed (R) contains all nodes, shuffle the order in which the
+  // Manul-Manan: nodes should be processed, otherwise, the nodes should be processed according to R
   if(qual->size == qual->R.size())
   {
 	  random_order.resize(qual->size);
@@ -353,13 +353,13 @@ Louvain::one_level() {
 		random_order[i]=i;
 	  for (int i=0 ; i < qual->size-1 ; i++)
 	  {
-      // Manul: pick a random number j from the range [i, qual->size-1], and swap i-th and j-th elements
+      // Manul-Manan: pick a random number j from the range [i, qual->size-1], and swap i-th and j-th elements
 		int rand_pos = rand()%(qual->size-i)+i;
 		int tmp = random_order[i];
 		random_order[i] = random_order[rand_pos];
 		random_order[rand_pos] = tmp;
 	  }
-    // Manul: now random_order contains a random permutation of [0..qual->size-1] (all nodes)
+    // Manul-Manan: now random_order contains a random permutation of [0..qual->size-1] (all nodes)
   }
 
   else

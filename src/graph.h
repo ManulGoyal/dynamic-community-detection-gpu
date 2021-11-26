@@ -63,8 +63,8 @@ class Graph {
   
   Graph (char *filename, int type);
   
-  // Manul: removes multiple edges, and if the graph is weighted, replaces multiple edges with a single edge of
-  // Manul: weight equal to sum of the weights of the multiple edges
+  // Manul-Manan: removes multiple edges, and if the graph is weighted, replaces multiple edges with a single edge of
+  // Manul-Manan: weight equal to sum of the weights of the multiple edges
   void clean(int type);
   void renumber(int type, char *filename);//delete nodes without any neighbor and renumber the size of links
   void display(int type);

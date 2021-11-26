@@ -48,7 +48,7 @@ __device__ int prepareHashArraysAggregation(int community, int prime, float weig
 	}
 }
 
-// Manul: computes community sizes and degrees for each community, and marks these comm's
+// Manul-Manan: computes community sizes and degrees for each community, and marks these comm's
 __global__ void fillArrays(int V, int *communitySize, int *communityDegree, int *newID, int *vertexCommunity, int *edgesIndex) {
 	int vertex = blockIdx.x * THREADS_PER_BLOCK + threadIdx.x;
 	if (vertex < V) {
@@ -415,7 +415,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 	
 	// cout << "agg1.2" << endl;
 
-	// Manul: computes sum of newID, which is equal to total number of comm's
+	// Manul-Manan: computes sum of newID, which is equal to total number of comm's
 	int newV = thrust::reduce(thrust::device, newID, newID + V);
 	thrust::exclusive_scan(thrust::device, newID, newID + V , newID);
 	thrust::exclusive_scan(thrust::device, communityDegree, communityDegree + V, edgePos);
@@ -467,7 +467,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 	int bucketNum = bucketsSize - 2;
 	blockDimension = dims[bucketNum];
 	int commDegree = newV;
-	// int prime = getPrime(commDegree * 1.5);		// Manul: commented
+	// int prime = getPrime(commDegree * 1.5);		// Manul-Manan: commented
 	auto predicate = IsInBucketAggregation(buckets[bucketNum], buckets[bucketNum + 1], communityDegree);
 	int *deviceVerticesEnd = thrust::partition(thrust::device, deviceVertices, deviceVertices + hostStructures.V, predicate);
 	int partitionSize = thrust::distance(deviceVertices, deviceVerticesEnd);
@@ -546,10 +546,10 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 		int *hashCommunity;
 		float *hashWeight;
 		// cout << prime << " " << partitionSize << " " << (long long)prime*partitionSize << endl;
-		HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, prime * sizeof(int)));		// Manul: change
-		HANDLE_ERROR(cudaMalloc((void**)&hashWeight, prime * sizeof(float)));	// Manul: change
-		// HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, (long long) prime * partitionSize * sizeof(int)));		// Manul: change
-		// HANDLE_ERROR(cudaMalloc((void**)&hashWeight, (long long) prime * partitionSize * sizeof(float)));	// Manul: change
+		HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, prime * sizeof(int)));		// Manul-Manan: change
+		HANDLE_ERROR(cudaMalloc((void**)&hashWeight, prime * sizeof(float)));	// Manul-Manan: change
+		// HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, (long long) prime * partitionSize * sizeof(int)));		// Manul-Manan: change
+		// HANDLE_ERROR(cudaMalloc((void**)&hashWeight, (long long) prime * partitionSize * sizeof(float)));	// Manul-Manan: change
 		unsigned int sharedMemSize = THREADS_PER_BLOCK * sizeof(int);
 		unsigned int blocksDegrees = (partitionSize + blockDimension.y - 1) / blockDimension.y;
 		// mergeCommunityGlobal<<<blocksDegrees, blockDimension, sharedMemSize>>>(partitionSize, deviceVertices, deviceStructures, prime, edgePos,

@@ -97,7 +97,7 @@ host_structures convertToHostStructures(Graph& gr) {
 	// 	for (int i=0 ; i<deg ; i++) {
 	// 		int neigh  = *(p.first+i);//ith nighbor of node
 
-	// 		// Manul: weight of edge from node to its i-th neighbor
+	// 		// Manul-Manan: weight of edge from node to its i-th neighbor
 	// 		long double neigh_w = (gr.weights.size()==0)?1.0L:*(p.second+i);//ith neighbor comm weight
 
 	// 		hostStructures.communityWeight[i] += neigh_w;
@@ -198,7 +198,7 @@ void init_partition(host_structures& hostStructures, int* comm_size, std::vector
 		// fill(hostStructures.communityWeight, hostStructures.communityWeight + hostStructures.V, 0);
 		hostStructures.vertexCommunity[node] = comm;
 		hostStructures.communityWeight[comm] += vertexEdgeWeights[node];
-		// hostStructures.originalToCommunity[node] = comm;		// Manul: TODO: Not needed
+		// hostStructures.originalToCommunity[node] = comm;		// Manul-Manan: TODO: Not needed
 		comm_size[comm] += 1;
 	}
 

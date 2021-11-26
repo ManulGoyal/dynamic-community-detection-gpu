@@ -63,13 +63,13 @@ class Graph {
   unsigned long long nb_links;// summ of all degree of nodes which is #of links(if its not directed 2*#of links)
 
   long double total_weight;// sum of weighted_degree(i) for i 0 to #nodes
-  // Manul: Note: counts each weight twice in an unweighted graph
+  // Manul-Manan: Note: counts each weight twice in an unweighted graph
 
   int sum_nodes_w;// summ of node_w for all nodes
 
   vector<unsigned long long> degrees;//return the cumulative degree of node(sume of all degrees from 0 to node)
   vector<int> links;//Manul: stores the neighbours of the nodes in a contiguous fashion, i.e., the first
-  // Manul: nb_neighbours[0] entries are node 0's nbrs, the next nb_neighbours[1] entries are node 1' nbrs, so on
+  // Manul-Manan: nb_neighbours[0] entries are node 0's nbrs, the next nb_neighbours[1] entries are node 1' nbrs, so on
 
   //Manul: stores weight of each link in the same order as links vector above
   vector<long double> weights;//a vector of size nb_links return weight of each link
@@ -107,8 +107,8 @@ class Graph {
   inline int nb_neighbors(int node);
 
   // return the number of self loops of the node
-  // Manul: return the weight of a self loop on node if it exists, 0 otherwise
-  // Manul: assuming at most one self loop is present
+  // Manul-Manan: return the weight of a self loop on node if it exists, 0 otherwise
+  // Manul-Manan: assuming at most one self loop is present
   inline long double nb_selfloops(int node);
 
   // return the weighted degree of the node

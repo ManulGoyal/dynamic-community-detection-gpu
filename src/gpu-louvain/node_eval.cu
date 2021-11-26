@@ -72,7 +72,7 @@ __device__ int prepareHashArraysNE(int community, int prime, float weight, float
 __device__ float computeGainNE(int vertex, int community, int currentCommunity, float *communityWeight,
 							 float *vertexEdgesSum, float vertexToCommunity) {
 	
-	// Manul: vertexToCommunity contains e_{vertex -> community}
+	// Manul-Manan: vertexToCommunity contains e_{vertex -> community}
 	float communitySum = communityWeight[community];
 	float currentCommunitySum = communityWeight[currentCommunity] - vertexEdgesSum[vertex];
 	float gain = vertexToCommunity / MM + vertexEdgesSum[vertex] * (currentCommunitySum - communitySum) / (2 * MM * MM);
@@ -104,8 +104,8 @@ __device__ bool findInHashTable(int* hashCommunity, int community, int prime, in
  */
 __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_structures deviceStructures, int *hashCommunity, float *hashWeight, float *vertexToCurrentCommunity, float *bestGains, int *bestCommunities, int *nodeEval, int *commEval) {   //
 
-			// Manul: vertexToCurrentCommunity[i] stores the value of ei -> C(i)\{i} after
-			// Manul: this function finishes execution
+			// Manul-Manan: vertexToCurrentCommunity[i] stores the value of ei -> C(i)\{i} after
+			// Manul-Manan: this function finishes execution
 
 	// remove
 	// if(threadIdx.x == 0) {
@@ -121,16 +121,16 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 		float *weights = deviceStructures.weights, *communityWeight = deviceStructures.communityWeight,
 		*vertexEdgesSum = deviceStructures.vertexEdgesSum;
 
-		int concurrentNeighbours = blockDim.x;	// Manul: threads per vertex
+		int concurrentNeighbours = blockDim.x;	// Manul-Manan: threads per vertex
 		int hashTablesOffset = threadIdx.y * prime;
 
         if (threadIdx.x == 0) {
 		    vertexToCurrentCommunity[threadIdx.y] = 0;
 		}
 
-		// Manul: this loop just fills all entries of hashWeight with 0 and hashCommunity with -1
-		// Manul: suppose blockDim.x = concurrentNeighbours = 4. Then thread with x index
-		// Manul: equal to 0 will process the 0th, 4th, 8th, ... neighbours of this vertex (threadIdx.y)
+		// Manul-Manan: this loop just fills all entries of hashWeight with 0 and hashCommunity with -1
+		// Manul-Manan: suppose blockDim.x = concurrentNeighbours = 4. Then thread with x index
+		// Manul-Manan: equal to 0 will process the 0th, 4th, 8th, ... neighbours of this vertex (threadIdx.y)
 		for (unsigned int i = threadIdx.x; i < prime; i += concurrentNeighbours) {
 			hashWeight[hashTablesOffset + i] = 0;
 			hashCommunity[hashTablesOffset + i] = -1;
@@ -151,7 +151,7 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 		/*** commented ***/
 
 		// putting data in hash table
-		// Manul: the thread with x = 0 will process the 0th, (0+blockDim.x)th, ... neighbours of vertex
+		// Manul-Manan: the thread with x = 0 will process the 0th, (0+blockDim.x)th, ... neighbours of vertex
 		int neighbourIndex = threadIdx.x + edgesIndex[vertex];
 		int upperBound = edgesIndex[vertex + 1];
 		int curPos;
@@ -165,13 +165,13 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 				// remove
 				// printf("Node %d Neighbour %d comm in hash table\n", vertex, neighbour);
 
-				// Manul: this is the weight of the edge (vertex, neighbour)
+				// Manul-Manan: this is the weight of the edge (vertex, neighbour)
 				float weight = weights[neighbourIndex];	
 				// this lets us achieve ei -> C(i)\{i} instead of ei -> C(i)
 				if (neighbour != vertex) {
-					// Manul: finds the appropriate position in the hash tables for 'community',
-					// Manul: which is returned as curPos, and also sets hashCommunity[curPos] = community
-					// Manul: and adds 'weight' to hashWeight[curPos]
+					// Manul-Manan: finds the appropriate position in the hash tables for 'community',
+					// Manul-Manan: which is returned as curPos, and also sets hashCommunity[curPos] = community
+					// Manul-Manan: and adds 'weight' to hashWeight[curPos]
 					curPos = prepareHashArraysNE(community, prime, weight, hashWeight, hashCommunity, hashTablesOffset);
 					if (community == currentCommunity)
 						atomicAdd(&vertexToCurrentCommunity[threadIdx.y], weight);
@@ -179,15 +179,15 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 				if ((community < currentCommunity || communitySize[community] > 1 || communitySize[currentCommunity] > 1) &&
 					community != currentCommunity) {
 
-					// Manul: Note: Although here there is no guarantee that hashWeight[curPos] contains
-					// Manul: the fully computed value of e_{vertex -> community}, but as 
-					// Manul: threads update hashWeight[curPos], it can only increase, and
-					// Manul: therefore gain can also only increase (since gain increases with
-					// Manul: e_{vertex -> community}). Hence, the thread that last processes a 
-					// Manul: neighbour of community = 'community' will see the actual value of
-					// Manul: e_{vertex -> community} in hashWeight[curPos], and thus compute the
-					// Manul: actual gain obtained from moving 'vertex' to 'community', thus,
-					// Manul: this last thread will have bestGain >= the actual gain
+					// Manul-Manan: Note: Although here there is no guarantee that hashWeight[curPos] contains
+					// Manul-Manan: the fully computed value of e_{vertex -> community}, but as 
+					// Manul-Manan: threads update hashWeight[curPos], it can only increase, and
+					// Manul-Manan: therefore gain can also only increase (since gain increases with
+					// Manul-Manan: e_{vertex -> community}). Hence, the thread that last processes a 
+					// Manul-Manan: neighbour of community = 'community' will see the actual value of
+					// Manul-Manan: e_{vertex -> community} in hashWeight[curPos], and thus compute the
+					// Manul-Manan: actual gain obtained from moving 'vertex' to 'community', thus,
+					// Manul-Manan: this last thread will have bestGain >= the actual gain
 					float gain = computeGainNE(vertex, community, currentCommunity, communityWeight, vertexEdgesSum, hashWeight[curPos]);
 					
 					// remove
@@ -203,16 +203,16 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 			neighbourIndex += concurrentNeighbours;
 		}
 
-		// Manul: now bestGain contains the best gain that can be obtained by moving 'vertex'
-		// Manul: from its original community to community of one of its (threadIdx.x + k * concurrentNeighbours)-th neighbours, where k = 0,1,2,...
-		// Manul: bestCommunity contains the community ID of the community that yields the
-		// Manul: bestGain from the aforementioned communities
+		// Manul-Manan: now bestGain contains the best gain that can be obtained by moving 'vertex'
+		// Manul-Manan: from its original community to community of one of its (threadIdx.x + k * concurrentNeighbours)-th neighbours, where k = 0,1,2,...
+		// Manul-Manan: bestCommunity contains the community ID of the community that yields the
+		// Manul-Manan: bestGain from the aforementioned communities
 
 		
 		if (concurrentNeighbours <= WARP_SIZE) {
-			// Manul: the below loop simply max-aggregates the bestGain's of all threads
-			// Manul: in the same warp (which process the same vertex) and puts the max
-			// Manul: value in the 0-th, blockDim.x-th, 2*blockDim.x-th... threads of the warp
+			// Manul-Manan: the below loop simply max-aggregates the bestGain's of all threads
+			// Manul-Manan: in the same warp (which process the same vertex) and puts the max
+			// Manul-Manan: value in the 0-th, blockDim.x-th, 2*blockDim.x-th... threads of the warp
 			for (unsigned int offset = concurrentNeighbours / 2; offset > 0; offset /= 2) {
 				float otherGain = __shfl_down_sync(FULL_MASK, bestGain, offset);
 				int otherCommunity = __shfl_down_sync(FULL_MASK, bestCommunity, offset);
@@ -221,18 +221,18 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 					bestCommunity = otherCommunity;
 				}
 			}
-			// Manul: now, if this thread has x = 0, then bestGain = max(bestGain's of all threads with same y) = max(bestGain's of all threads processing the same vertex)
-			// Manul: and, bestCommunity = the neighbouring community corresponding to this bestGain 
+			// Manul-Manan: now, if this thread has x = 0, then bestGain = max(bestGain's of all threads with same y) = max(bestGain's of all threads processing the same vertex)
+			// Manul-Manan: and, bestCommunity = the neighbouring community corresponding to this bestGain 
 		} else {
-			// Manul: here, the blockDim = (128, 1), so, the whole block is assigned to a single vertex
-			// Manul: here, concurrentNeighbours = 128 and this thread is responsible for processing
-			// Manul: the (threadIdx.x + k * 128)-th neighbours of this vertex (k = 0,1,2,...)
-			// Manul: bestGains array in shared memory has size = 128 * sizeof(float)
+			// Manul-Manan: here, the blockDim = (128, 1), so, the whole block is assigned to a single vertex
+			// Manul-Manan: here, concurrentNeighbours = 128 and this thread is responsible for processing
+			// Manul-Manan: the (threadIdx.x + k * 128)-th neighbours of this vertex (k = 0,1,2,...)
+			// Manul-Manan: bestGains array in shared memory has size = 128 * sizeof(float)
             bestGains[threadIdx.x] = bestGain;
             bestCommunities[threadIdx.x] = bestCommunity;
 
-			// Manul: this loop max-aggregates the bestGain values of each of the 128 threads
-			// Manul: in this block into the thread with x index of 0
+			// Manul-Manan: this loop max-aggregates the bestGain values of each of the 128 threads
+			// Manul-Manan: in this block into the thread with x index of 0
 			for (unsigned int offset = concurrentNeighbours / 2; offset > 0; offset /= 2) {
 				__syncthreads();
 				if (threadIdx.x < offset) {
@@ -254,13 +254,13 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 		// 	printf("Node %d, bestGain %f\n", vertex, bestGain);
 		// }
 
-		// Manul: the bestGain in thread with x index of 0 is the required best gain that can
-		// Manul: be obtained by moving 'vertex' into one of its neighbouring communities
-		// Manul: bestGain - vertexToCurrentCommunity[threadIdx.y] / M will give the actual value 
-		// Manul: of delta_Q_{vertex -> bestCommunity}
+		// Manul-Manan: the bestGain in thread with x index of 0 is the required best gain that can
+		// Manul-Manan: be obtained by moving 'vertex' into one of its neighbouring communities
+		// Manul-Manan: bestGain - vertexToCurrentCommunity[threadIdx.y] / M will give the actual value 
+		// Manul-Manan: of delta_Q_{vertex -> bestCommunity}
 		if (threadIdx.x == 0 && bestGain - vertexToCurrentCommunity[threadIdx.y] / MM > 0) {
 			// newVertexCommunity[vertex] = bestCommunity;
-			// atomicExch(&commEval[bestCommunity], 1);	// Manul: TODO: Is this overkill?
+			// atomicExch(&commEval[bestCommunity], 1);	// Manul-Manan: TODO: Is this overkill?
 			commEval[bestCommunity] = 1;
 			nodeEval[vertex] = 1;
 
@@ -268,7 +268,7 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 			// printf(" -- Marking comm\n");
 		} 
 		// else {
-		// 	// Manul: Issue: Won't this possibly overwrite the change made by the above if statement?
+		// 	// Manul-Manan: Issue: Won't this possibly overwrite the change made by the above if statement?
 		// 	newVertexCommunity[vertex] = currentCommunity;
 		// }
 	}
@@ -279,23 +279,23 @@ __global__ void computeBestCommShared(int V, nodeIndex *vertices, int prime, dev
 	int vertexIndex = blockIdx.x * verticesPerBlock + threadIdx.y;
 	if (vertexIndex < V) {
 		extern __shared__ int s[];
-		// Manul: hashCommunity is int array of size verticesPerBlock * prime
+		// Manul-Manan: hashCommunity is int array of size verticesPerBlock * prime
 		int *hashCommunity = s;
-		// Manul: hashWeight is float array of size verticesPerBlock * prime
+		// Manul-Manan: hashWeight is float array of size verticesPerBlock * prime
 		auto *hashWeight = (float *) &hashCommunity[verticesPerBlock * prime];
-		// Manul: vertexToCurrentCommunity is float array of size verticesPerBlock
-		// Manul: vertexToCurrentCommunity[i] is used to store e_{i -> C(i)\{i}}
+		// Manul-Manan: vertexToCurrentCommunity is float array of size verticesPerBlock
+		// Manul-Manan: vertexToCurrentCommunity[i] is used to store e_{i -> C(i)\{i}}
 		auto *vertexToCurrentCommunity = (float *) &hashWeight[verticesPerBlock * prime];
 
-		// Manul: the next two arrays are only used by blocks corresponding to buckets 
-		// Manul: with blockDim.x (i.e., threads per vertex) > 32, because all threads belonging
-		// Manul: to same vertex do not belong to the same warp in this case
-		// Manul: so, each thread assigned to the same vertex has to store its intermediate
-		// Manul: results into shared memory arrays, which are defined below
+		// Manul-Manan: the next two arrays are only used by blocks corresponding to buckets 
+		// Manul-Manan: with blockDim.x (i.e., threads per vertex) > 32, because all threads belonging
+		// Manul-Manan: to same vertex do not belong to the same warp in this case
+		// Manul-Manan: so, each thread assigned to the same vertex has to store its intermediate
+		// Manul-Manan: results into shared memory arrays, which are defined below
 
-		// Manul: bestGains is float array of size THREADS_PER_BLOCK (128)
+		// Manul-Manan: bestGains is float array of size THREADS_PER_BLOCK (128)
 		float *bestGains = &vertexToCurrentCommunity[verticesPerBlock];
-		// Manul: bestCommunities is int array of size THREADS_PER_BLOCK (128)
+		// Manul-Manan: bestCommunities is int array of size THREADS_PER_BLOCK (128)
 		int *bestCommunities = (int *) &bestGains[THREADS_PER_BLOCK];
 		computeBestComm(V, vertices, prime, deviceStructures, hashCommunity, hashWeight, vertexToCurrentCommunity,
 				bestGains, bestCommunities, nodeEval, commEval);
@@ -372,7 +372,7 @@ __device__ void computeCommunitiesSV(int V, nodeIndex *vertices, int *edges, int
 			hashCommunity[hashTablesOffset + i] = -1;
 		}
 
-		// Manul: TODO: check
+		// Manul-Manan: TODO: check
 		if (concurrentNeighbours > WARP_SIZE)
 			__syncthreads();
 		
@@ -408,23 +408,23 @@ __global__ void computeCommunitiesSVGeneral(int V, nodeIndex *vertices, int *edg
 	int vertexIndex = blockIdx.x * verticesPerBlock + threadIdx.y;
 	if (vertexIndex < V) {
 		// extern __shared__ int s[];
-		// Manul: hashCommunity is int array of size verticesPerBlock * prime
+		// Manul-Manan: hashCommunity is int array of size verticesPerBlock * prime
 		// int *hashCommunity = s;
-		// Manul: hashWeight is float array of size verticesPerBlock * prime
+		// Manul-Manan: hashWeight is float array of size verticesPerBlock * prime
 		// auto *hashWeight = (float *) &hashCommunity[verticesPerBlock * prime];
-		// Manul: vertexToCurrentCommunity is float array of size verticesPerBlock
-		// Manul: vertexToCurrentCommunity[i] is used to store e_{i -> C(i)\{i}}
+		// Manul-Manan: vertexToCurrentCommunity is float array of size verticesPerBlock
+		// Manul-Manan: vertexToCurrentCommunity[i] is used to store e_{i -> C(i)\{i}}
 		// auto *vertexToCurrentCommunity = (float *) &hashWeight[verticesPerBlock * prime];
 
-		// Manul: the next two arrays are only used by blocks corresponding to buckets 
-		// Manul: with blockDim.x (i.e., threads per vertex) > 32, because all threads belonging
-		// Manul: to same vertex do not belong to the same warp in this case
-		// Manul: so, each thread assigned to the same vertex has to store its intermediate
-		// Manul: results into shared memory arrays, which are defined below
+		// Manul-Manan: the next two arrays are only used by blocks corresponding to buckets 
+		// Manul-Manan: with blockDim.x (i.e., threads per vertex) > 32, because all threads belonging
+		// Manul-Manan: to same vertex do not belong to the same warp in this case
+		// Manul-Manan: so, each thread assigned to the same vertex has to store its intermediate
+		// Manul-Manan: results into shared memory arrays, which are defined below
 
-		// Manul: bestGains is float array of size THREADS_PER_BLOCK (128)
+		// Manul-Manan: bestGains is float array of size THREADS_PER_BLOCK (128)
 		// float *bestGains = &vertexToCurrentCommunity[verticesPerBlock];
-		// Manul: bestCommunities is int array of size THREADS_PER_BLOCK (128)
+		// Manul-Manan: bestCommunities is int array of size THREADS_PER_BLOCK (128)
 		// int *bestCommunities = (int *) &bestGains[THREADS_PER_BLOCK];
 		hashCommunity += blockIdx.x * verticesPerBlock * prime;
 		computeCommunitiesSV(V, vertices, edges, edgesIndex, prime, deviceStructures, hashCommunity);
@@ -439,22 +439,22 @@ __global__ void computeFinalNodeEval(int V, nodeIndex *vertices, device_structur
 	if (vertexIndex < V) {
 		int *edgesIndex = deviceStructures.edgesIndex, *edges = deviceStructures.edges;
 
-		int concurrentNeighbours = blockDim.x;	// Manul: threads per vertex
+		int concurrentNeighbours = blockDim.x;	// Manul-Manan: threads per vertex
 		// int hashTablesOffset = threadIdx.y * prime;
 
         // if (threadIdx.x == 0) {
 		//     vertexToCurrentCommunity[threadIdx.y] = 0;
 		// }
 
-		// Manul: this loop just fills all entries of hashWeight with 0 and hashCommunity with -1
-		// Manul: suppose blockDim.x = concurrentNeighbours = 4. Then thread with x index
-		// Manul: equal to 0 will process the 0th, 4th, 8th, ... neighbours of this vertex (threadIdx.y)
+		// Manul-Manan: this loop just fills all entries of hashWeight with 0 and hashCommunity with -1
+		// Manul-Manan: suppose blockDim.x = concurrentNeighbours = 4. Then thread with x index
+		// Manul-Manan: equal to 0 will process the 0th, 4th, 8th, ... neighbours of this vertex (threadIdx.y)
 		// for (unsigned int i = threadIdx.x; i < prime; i += concurrentNeighbours) {
 		// 	hashWeight[hashTablesOffset + i] = 0;
 		// 	hashCommunity[hashTablesOffset + i] = -1;
 		// }
 
-		// Manul: TODO: Check if should be commented
+		// Manul-Manan: TODO: Check if should be commented
 		// if (concurrentNeighbours > WARP_SIZE)
 		// 	__syncthreads();
 
@@ -470,7 +470,7 @@ __global__ void computeFinalNodeEval(int V, nodeIndex *vertices, device_structur
 		/*** commented ***/
 
 		// putting data in hash table
-		// Manul: the thread with x = 0 will process the 0th, (0+blockDim.x)th, ... neighbours of vertex
+		// Manul-Manan: the thread with x = 0 will process the 0th, (0+blockDim.x)th, ... neighbours of vertex
 		int neighbourIndex = threadIdx.x + edgesIndex[vertex];
 		int upperBound = edgesIndex[vertex + 1];
 
@@ -565,7 +565,7 @@ int* computeFinalNodeEval_gpu(device_structures& deviceStructures, host_structur
 
 	cout << "Before partition" << endl;
 
-	auto predicate = isInBucketEval(buckets[lastBucketNum], buckets[lastBucketNum + 1], hostStructures.edgesIndex, nodeEval);		// Manul: TODO: check if it works
+	auto predicate = isInBucketEval(buckets[lastBucketNum], buckets[lastBucketNum + 1], hostStructures.edgesIndex, nodeEval);		// Manul-Manan: TODO: check if it works
 
 	/***/
 	// nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);				//
@@ -678,8 +678,8 @@ int* computeFinalNodeEval_gpu(device_structures& deviceStructures, host_structur
 		// HANDLE_ERROR(cudaFree(partition));
     }
 
-	// Manul: partition unfreed
-	// Manul: finalNodeEval unfreed
+	// Manul-Manan: partition unfreed
+	// Manul-Manan: finalNodeEval unfreed
 
 	return finalNodeEval;
 }
@@ -697,7 +697,7 @@ nodeIndex* computeCommunities_gpu(device_structures& deviceStructures, vector<pa
 
     int lastBucketNum = bucketsSize - 2;
     dim3 lastBlockDimension = dims[lastBucketNum];
-    auto predicate = isInBucketSV(buckets[lastBucketNum], buckets[lastBucketNum + 1], newEdgesIndex_d);		// Manul: TODO: check if it works
+    auto predicate = isInBucketSV(buckets[lastBucketNum], buckets[lastBucketNum + 1], newEdgesIndex_d);		// Manul-Manan: TODO: check if it works
 
     nodeIndex *partition;
 	HANDLE_ERROR(cudaMalloc((void**)&partition, svCount*sizeof(nodeIndex)));		// free it done
@@ -802,8 +802,8 @@ nodeIndex* computeCommunities_gpu(device_structures& deviceStructures, vector<pa
 	HANDLE_ERROR(cudaFree(newEdgesIndex_d));
 	HANDLE_ERROR(cudaFree(edgesSV_d));
 
-	// Manul: hashCommunitySV[..] are still unfreed
-	// Manul: partition is still unfreed 
+	// Manul-Manan: hashCommunitySV[..] are still unfreed
+	// Manul-Manan: partition is still unfreed 
 
 	return partition;
 }
@@ -871,7 +871,7 @@ int nodeEval_add_gpu(device_structures& deviceStructures, host_structures& hostS
 	HANDLE_ERROR(cudaMalloc((void**)&nodeEval, hostStructures.V * sizeof(int))); // free it done
 	HANDLE_ERROR(cudaMalloc((void**)&commEval, hostStructures.V * sizeof(int))); // free it done
 
-	// Manul: TODO: These memsets are needed, right?
+	// Manul-Manan: TODO: These memsets are needed, right?
 	HANDLE_ERROR(cudaMemset(nodeEval, 0, hostStructures.V * sizeof(int)));
 	HANDLE_ERROR(cudaMemset(commEval, 0, hostStructures.V * sizeof(int)));
 
@@ -883,7 +883,7 @@ int nodeEval_add_gpu(device_structures& deviceStructures, host_structures& hostS
 
 	cout << "Before partition" << endl;
 
-	auto predicate = isInBucket(buckets[lastBucketNum], buckets[lastBucketNum + 1], hostStructures.edgesIndex);		// Manul: TODO: check if it works
+	auto predicate = isInBucket(buckets[lastBucketNum], buckets[lastBucketNum + 1], hostStructures.edgesIndex);		// Manul-Manan: TODO: check if it works
 
 
 	nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);				//
@@ -1080,7 +1080,7 @@ __global__ void computeCommunitiesDelSV(int V, nodeIndex *vertices, int *edges, 
 		// 	hashCommunity[hashTablesOffset + i] = -1;
 		// }
 
-		// Manul: TODO: check
+		// Manul-Manan: TODO: check
 		// if (concurrentNeighbours > WARP_SIZE)
 		// 	__syncthreads();
 		
@@ -1120,7 +1120,7 @@ nodeIndex* computeCommunitiesDel_gpu(device_structures& deviceStructures, vector
 
     int lastBucketNum = bucketsSize - 2;
     dim3 lastBlockDimension = dims[lastBucketNum];
-    auto predicate = isInBucketSV(buckets[lastBucketNum], buckets[lastBucketNum + 1], newEdgesIndex_d);		// Manul: TODO: check if it works
+    auto predicate = isInBucketSV(buckets[lastBucketNum], buckets[lastBucketNum + 1], newEdgesIndex_d);		// Manul-Manan: TODO: check if it works
 
     nodeIndex *partition;
 	HANDLE_ERROR(cudaMalloc((void**)&partition, svCount*sizeof(nodeIndex)));		// free it done
@@ -1228,7 +1228,7 @@ nodeIndex* computeCommunitiesDel_gpu(device_structures& deviceStructures, vector
 	HANDLE_ERROR(cudaFree(newEdgesIndex_d));
 	HANDLE_ERROR(cudaFree(edgesSV_d));
 
-	// Manul: partition is still unfreed 
+	// Manul-Manan: partition is still unfreed 
 
 	return partition;
 }
@@ -1283,7 +1283,7 @@ int nodeEval_del_gpu(device_structures& deviceStructures, host_structures& hostS
 	HANDLE_ERROR(cudaMalloc((void**)&nodeEval, hostStructures.V * sizeof(int))); // free it 
 	HANDLE_ERROR(cudaMalloc((void**)&commEval, hostStructures.V * sizeof(int))); // free it 
 
-	// Manul: TODO: These memsets are needed, right?
+	// Manul-Manan: TODO: These memsets are needed, right?
 	HANDLE_ERROR(cudaMemset(nodeEval, 0, hostStructures.V * sizeof(int)));
 	HANDLE_ERROR(cudaMemset(commEval, 0, hostStructures.V * sizeof(int)));
 

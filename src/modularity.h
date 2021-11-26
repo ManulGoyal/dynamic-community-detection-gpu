@@ -54,8 +54,8 @@ using namespace std;
 class Modularity: public Quality {
  public:
 
-  // Manul: for the i-th community, in[i] = sum of e_(k->C(k)) for all nodes k in i
-  // Manul: and tot[i] = a_i (where a_i is sum of weighted degrees of all nodes in i)
+  // Manul-Manan: for the i-th community, in[i] = sum of e_(k->C(k)) for all nodes k in i
+  // Manul-Manan: and tot[i] = a_i (where a_i is sum of weighted degrees of all nodes in i)
   vector<long double> in, tot; // used to compute the quality participation of each community
 
   Modularity(Graph & gr);
@@ -75,8 +75,8 @@ inline void
 Modularity::remove(int node, int comm, long double dnodecomm) {//dnodecomm: weigth of links between node and comm
   assert(node>=0 && node<size);
 
-  // Manul: here 2 is multiplied with dnodecomm which seems correct although in paper
-  // Manul: it is not there
+  // Manul-Manan: here 2 is multiplied with dnodecomm which seems correct although in paper
+  // Manul-Manan: it is not there
   in[comm]  -= 2.0L*dnodecomm + g.nb_selfloops(node);
   tot[comm] -= g.weighted_degree(node);
   
@@ -102,13 +102,13 @@ Modularity::gain(int node, int comm, long double dnc, long double degc) {//dnc:d
   long double totc = tot[comm];
   long double m2   = g.total_weight;
   
-  // Manul: dnc is sum of weights of edges from node to vertices in comm (same as dnodecomm)
-  // Manul: Although the actual expression should have been:
-  // Manul: gain = (2*dnc + self_loops_weights_sum(node))/m2 - (2*totc*degc + degc^2)/(m2^2)
-  // Manul: but while local maximisation of gain, the constant terms can be dropped
-  // Manul: basically we can compare [(gain * m2 - self_loops_weights_sum(node) + degc^2/m2]/2
-  // Manul: which is equivalent to dnc - totc*degc/m2
-  // Manul: Note that this value CAN'T be used for actual updation of modularity
+  // Manul-Manan: dnc is sum of weights of edges from node to vertices in comm (same as dnodecomm)
+  // Manul-Manan: Although the actual expression should have been:
+  // Manul-Manan: gain = (2*dnc + self_loops_weights_sum(node))/m2 - (2*totc*degc + degc^2)/(m2^2)
+  // Manul-Manan: but while local maximisation of gain, the constant terms can be dropped
+  // Manul-Manan: basically we can compare [(gain * m2 - self_loops_weights_sum(node) + degc^2/m2]/2
+  // Manul-Manan: which is equivalent to dnc - totc*degc/m2
+  // Manul-Manan: Note that this value CAN'T be used for actual updation of modularity
 
   return (dnc - totc*degc/m2);
 }
