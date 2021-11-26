@@ -424,7 +424,7 @@ vector<vector<int> >find_NodCom(string filename,int n)
 // Manul: note: if (a, b) is present in filename, removes both (a, b) and (b, a) from graph,
 // Manul: if these edges exist. But in the returned vector, only (a, b) is present.
 // Manul: Does not properly update the weights array, and does not remove isolated nodes
-vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph *g)
+vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Graph *g, vector<pair<unsigned int,unsigned int> >& delEdges)
 {
 	ifstream finput;
 	vector<pair<unsigned int,unsigned int> > vect;
@@ -591,6 +591,10 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
                 N[des]++;
                 // Manul: why (des, start) is not added?
                 vect.push_back(make_pair(start, des));
+
+                delEdges.push_back(make_pair(start, des));
+                delEdges.push_back(make_pair(des, start));
+
             }
 
 	  }//end of while
@@ -617,6 +621,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
      double t4;
      gettimeofday(&start4, NULL);
      sort(vect.begin(),vect.end());
+     sort(delEdges.begin(), delEdges.end());
      gettimeofday(&end4, NULL);
      t4 = (double) ((end4.tv_sec -start4.tv_sec)*1000 + (end4.tv_usec- start4.tv_usec)/1000) ;
      g->nb_nodes = g->degrees.size();
@@ -1249,9 +1254,11 @@ main(int argc, char **argv) {
 	  if(fexists(name))
 	  {
 
+      vector<pair<unsigned int,unsigned int> > delEdges;
+
     GTIC("buildNew_del"); // Manul's Change
       // Manul: modify gr by deleting the edges specified in file 'name'
-		vect_new_edges = buildNewGraph_del(name,&gr);
+		vect_new_edges = buildNewGraph_del(name,&gr,delEdges);
     GTOC;    // Manul's Change
 
 		Graph g1 = gr;
@@ -1275,11 +1282,24 @@ main(int argc, char **argv) {
 		gettimeofday(&sTime2, NULL);
 		//Re = nodToEval_b(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
 
-    GTIC("nodToEval_del");  // Manul's Change
-    // Manul: compute the set of nodes to be re-evaulated by using the new graph (with deleted edges), and
-    // Manul: the partition computed by the last level of the last time step
-		Re = nodToEval_del(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
-    GTOC;    // Manul's Change
+    // Manul start
+      GTIC("part after del mem");
+      GPUWrapper gpuWrapper(&c1, n2c, true);
+      GTOC;
+
+      GTIC("node eval del gpu");
+      int R_size = gpuWrapper.gpuNodeEvalDel(delEdges);
+      GTOC;
+
+    // Manul end
+
+    /**********Commented*****************/
+    // GTIC("nodToEval_del");  // Manul's Change
+    // // Manul: compute the set of nodes to be re-evaulated by using the new graph (with deleted edges), and
+    // // Manul: the partition computed by the last level of the last time step
+		// Re = nodToEval_del(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
+    // GTOC;    // Manul's Change
+    /**********Commented*****************/
 
       /**********Commented*****************/
       // // Manul: if re-evaluation set is empty, simply copy graph.tree file for prev time step
@@ -1316,8 +1336,8 @@ main(int argc, char **argv) {
 		vect_new_edges.clear();
 		vector<pair<unsigned int,unsigned int> >(vect_new_edges).swap(vect_new_edges);
 
-		cerr<<"R percentage : "<< ((double)(c1.qual)->R.size()/(double)(c1.qual)->g.nb_nodes)*100  <<endl;
-		if((c1.qual)->R.size()!=0)
+		cerr<<"R percentage : "<< ((double)R_size/(double)(c1.qual)->g.nb_nodes)*100  <<endl;
+		if(R_size!=0)
 		{
 		    s = "graph"+my2::to_string(count_del)+".tree";
 			nb_calls =0;
@@ -1326,11 +1346,13 @@ main(int argc, char **argv) {
 			level = 0;
 			gettimeofday(&level_time_s,NULL);
 
-      // Manul start
-      GTIC("part after del mem");
-      // Manul: isolated nodes are not removed after deletion, and n2c is perfectly valid after deletion
-      GPUWrapper gpuWrapper(&c1, n2c, true);
-      GTOC;
+      /**********Commented*****************/
+      // // Manul start
+      // GTIC("part after del mem");
+      // // Manul: isolated nodes are not removed after deletion, and n2c is perfectly valid after deletion
+      // GPUWrapper gpuWrapper(&c1, n2c, true);
+      // GTOC;
+      /**********Commented*****************/
 
       GTIC("partitioning after del");
       gpuWrapper.gpuLouvain(n2c);
@@ -1555,7 +1577,7 @@ main(int argc, char **argv) {
       GTOC;
 
       GTIC("node eval add gpu");
-      gpuWrapper.gpuNodeEvalAdd(vect_new_edges);
+      int R_size = gpuWrapper.gpuNodeEvalAdd(vect_new_edges);
       GTOC;
 
       // Manul end
@@ -1564,9 +1586,9 @@ main(int argc, char **argv) {
 	  	vector<vector<int> >(nodes_in_comm).swap(nodes_in_comm);
 	  	vect_new_edges.clear();
 	  	vector<pair<unsigned int,unsigned int> >(vect_new_edges).swap(vect_new_edges);
-	  	cerr<<"R percentage : "<<(double)(c1.qual)->R.size()/(double)(c1.qual)->g.nb_nodes *100 <<endl;
+	  	cerr<<"R percentage : "<<(double)R_size/(double)(c1.qual)->g.nb_nodes *100 <<endl;
 
-	  	if((c1.qual)->R.size()!=0)
+	  	if(R_size!=0)
 	  	{
 	  		nb_calls =0;
 	  		improvement = true;

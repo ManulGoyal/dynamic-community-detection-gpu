@@ -385,7 +385,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 		*newEdges = aggregationPhaseStructures.newEdges;
 	float *newWeights = aggregationPhaseStructures.newWeights;
 
-	cout << "Point 1A" << endl;
+	// cout << "Point 1A" << endl;
 
 	// cout << "agg1" << endl;
 	// cout << V << endl;
@@ -403,7 +403,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 
 	free(vertices);
 
-	cout << "Point 2A" << endl;
+	// cout << "Point 2A" << endl;
 
 	// cout << "agg1.1" << endl;
 
@@ -421,7 +421,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 	thrust::exclusive_scan(thrust::device, communityDegree, communityDegree + V, edgePos);
 	thrust::exclusive_scan(thrust::device, deviceStructures.communitySize, deviceStructures.communitySize + V, vertexStart);
 
-	cout << "Point 3A" << endl;
+	// cout << "Point 3A" << endl;
 	// cout << "agg2" << endl;
 
 	orderVertices<<<blocks, THREADS_PER_BLOCK>>>(V, orderedVertices, vertexStart,
@@ -440,7 +440,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 	};
 	thrust::fill(thrust::device, deviceStructures.E, deviceStructures.E + 1, 0);
 
-	cout << "Point 4A" << endl;
+	// cout << "Point 4A" << endl;
 
 	for (int bucketNum = 0; bucketNum < bucketsSize - 2; bucketNum++) {
 			dim3 blockDimension = dims[bucketNum];
@@ -458,7 +458,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 			}
 	}
 
-	cout << "Point 5A" << endl;
+	// cout << "Point 5A" << endl;
 
 	// cout << "agg3" << endl;
 
@@ -472,7 +472,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 	int *deviceVerticesEnd = thrust::partition(thrust::device, deviceVertices, deviceVertices + hostStructures.V, predicate);
 	int partitionSize = thrust::distance(deviceVertices, deviceVerticesEnd);
 
-	cout << "Point 6A" << endl;
+	// cout << "Point 6A" << endl;
 	
 	// int maxAllocatableCount = 1000000;
 	// int partitionSizeSafe = (partitionSize > 0) ? partitionSize : 1;
@@ -518,7 +518,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 		int *deviceVerticesEnd2 = thrust::partition(thrust::device, communityDegree2, communityDegree2 + V, predicate2);
 		int partitionSize2 = thrust::distance(communityDegree2, deviceVerticesEnd2);
 
-		cout << "Point 7A" << endl;
+		// cout << "Point 7A" << endl;
 
 		// int maxDegree = thrust::reduce(thrust::device, communityDegree2, communityDegree2 + partitionSize2);
 
@@ -529,7 +529,7 @@ void aggregateCommunities(device_structures &deviceStructures, host_structures &
 		for(int i = 0; i < partitionSize2; i++) primes2[i] = getPrime(commDeg2[i] * 1.5);
 		primes2[partitionSize2] = 0;
 
-		cout << "Point 8A" << endl;
+		// cout << "Point 8A" << endl;
 
 		int* primesD;
 		HANDLE_ERROR(cudaMalloc((void**)&primesD, (partitionSize2+1)*sizeof(int)));

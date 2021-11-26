@@ -3,7 +3,7 @@
 #include "utils.cuh"
 #include <vector>
 
-// __constant__ float M;
+// extern __constant__ float M;
 
 // const int bucketsSize = 8;
 // const int buckets[] = {0, 4, 8, 16, 32, 84, 319, INT_MAX};
@@ -36,6 +36,8 @@
 
 // void initM(host_structures& hostStructures);
 
-void nodeEval_add_gpu(device_structures& deviceStructures, host_structures& hostStructures, std::vector<pair<unsigned int, unsigned int>>& newEdges, std::vector<int>& R);
+int nodeEval_add_gpu(device_structures& deviceStructures, host_structures& hostStructures, std::vector<pair<unsigned int, unsigned int>>& newEdges);
+
+int nodeEval_del_gpu(device_structures& deviceStructures, host_structures& hostStructures, std::vector<pair<unsigned int, unsigned int>>& newEdges);
 
 #endif /* __NODE_EVAL__CUH__ */

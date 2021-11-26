@@ -34,7 +34,7 @@ const dim3 dims[] {
  */
 bool optimiseModularity(float minGain, device_structures& deviceStructures, host_structures& hostStructures);
 
-bool optimiseModularityUsingVertexSubset(float minGain, device_structures& deviceStructures, host_structures& hostStructures, std::vector<int>& nodeEval);
+bool optimiseModularityUsingVertexSubset(float minGain, device_structures& deviceStructures, host_structures& hostStructures, int R_size);
 
 float calculateModularity(int V, float M, device_structures deviceStructures);
 

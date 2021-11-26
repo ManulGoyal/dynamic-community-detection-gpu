@@ -3,6 +3,8 @@
 #include <thrust/partition.h>
 #include <vector>
 
+__constant__ float MM;
+
 struct nodeIndex {
 	int node, index, prime;
 	int *hashCommunity;
@@ -69,10 +71,15 @@ __device__ int prepareHashArraysNE(int community, int prime, float weight, float
  */
 __device__ float computeGainNE(int vertex, int community, int currentCommunity, float *communityWeight,
 							 float *vertexEdgesSum, float vertexToCommunity) {
+	
 	// Manul: vertexToCommunity contains e_{vertex -> community}
 	float communitySum = communityWeight[community];
 	float currentCommunitySum = communityWeight[currentCommunity] - vertexEdgesSum[vertex];
-	float gain = vertexToCommunity / M + vertexEdgesSum[vertex] * (currentCommunitySum - communitySum) / (2 * M * M);
+	float gain = vertexToCommunity / MM + vertexEdgesSum[vertex] * (currentCommunitySum - communitySum) / (2 * MM * MM);
+	
+	// remove
+	// printf("computeGainNE -> vertexToCommunity = %f, vertexEdgesSum[vertex] = %f, currentCommunitySum - communitySum = %f, MM = %f\n", vertexToCommunity, vertexEdgesSum[vertex], (currentCommunitySum - communitySum), MM);
+
 	return gain;
 }
 
@@ -99,6 +106,11 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 
 			// Manul: vertexToCurrentCommunity[i] stores the value of ei -> C(i)\{i} after
 			// Manul: this function finishes execution
+
+	// remove
+	// if(threadIdx.x == 0) {
+	// 	printf(" - In computeBestComm kernel\n");
+	// }
 
 
 	int verticesPerBlock = blockDim.y;
@@ -132,9 +144,11 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 		int bestCommunity = currentCommunity;
 		float bestGain = 0;
 
-		if(threadIdx.x == 0) {
-			nodeEval[vertex] = 1;
-		}
+		/*** commented ***/
+		// if(threadIdx.x == 0) {
+		// 	nodeEval[vertex] = 1;
+		// }
+		/*** commented ***/
 
 		// putting data in hash table
 		// Manul: the thread with x = 0 will process the 0th, (0+blockDim.x)th, ... neighbours of vertex
@@ -147,6 +161,10 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 			int community = vertexCommunity[neighbour];
 
 			if(findInHashTable(vertices[vertexIndex].hashCommunity, community, vertices[vertexIndex].prime, 0)) {
+
+				// remove
+				// printf("Node %d Neighbour %d comm in hash table\n", vertex, neighbour);
+
 				// Manul: this is the weight of the edge (vertex, neighbour)
 				float weight = weights[neighbourIndex];	
 				// this lets us achieve ei -> C(i)\{i} instead of ei -> C(i)
@@ -160,6 +178,7 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 				}
 				if ((community < currentCommunity || communitySize[community] > 1 || communitySize[currentCommunity] > 1) &&
 					community != currentCommunity) {
+
 					// Manul: Note: Although here there is no guarantee that hashWeight[curPos] contains
 					// Manul: the fully computed value of e_{vertex -> community}, but as 
 					// Manul: threads update hashWeight[curPos], it can only increase, and
@@ -170,6 +189,10 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
 					// Manul: actual gain obtained from moving 'vertex' to 'community', thus,
 					// Manul: this last thread will have bestGain >= the actual gain
 					float gain = computeGainNE(vertex, community, currentCommunity, communityWeight, vertexEdgesSum, hashWeight[curPos]);
+					
+					// remove
+					// printf("Node %d Neighbour %d Computed gain = %f\n", vertex, neighbour, gain);
+
 					if (gain > bestGain || (gain == bestGain && community < bestCommunity)) {
 						bestGain = gain;
 						bestCommunity = community;
@@ -225,13 +248,24 @@ __device__ void computeBestComm(int V, nodeIndex *vertices, int prime, device_st
             bestGain = bestGains[threadIdx.x];
             bestCommunity = bestCommunities[threadIdx.x];
 		}
+
+		// remove
+		// if(threadIdx.x == 0) {
+		// 	printf("Node %d, bestGain %f\n", vertex, bestGain);
+		// }
+
 		// Manul: the bestGain in thread with x index of 0 is the required best gain that can
 		// Manul: be obtained by moving 'vertex' into one of its neighbouring communities
 		// Manul: bestGain - vertexToCurrentCommunity[threadIdx.y] / M will give the actual value 
 		// Manul: of delta_Q_{vertex -> bestCommunity}
-		if (threadIdx.x == 0 && bestGain - vertexToCurrentCommunity[threadIdx.y] / M > 0) {
+		if (threadIdx.x == 0 && bestGain - vertexToCurrentCommunity[threadIdx.y] / MM > 0) {
 			// newVertexCommunity[vertex] = bestCommunity;
-			atomicExch(&commEval[bestCommunity], 1);	// Manul: TODO: Is this overkill?
+			// atomicExch(&commEval[bestCommunity], 1);	// Manul: TODO: Is this overkill?
+			commEval[bestCommunity] = 1;
+			nodeEval[vertex] = 1;
+
+			// remove
+			// printf(" -- Marking comm\n");
 		} 
 		// else {
 		// 	// Manul: Issue: Won't this possibly overwrite the change made by the above if statement?
@@ -397,6 +431,61 @@ __global__ void computeCommunitiesSVGeneral(int V, nodeIndex *vertices, int *edg
 	}
 }
 
+
+__global__ void computeFinalNodeEval(int V, nodeIndex *vertices, device_structures deviceStructures, int *finalNodeEval) {   //
+
+	int verticesPerBlock = blockDim.y;
+	int vertexIndex = blockIdx.x * verticesPerBlock + threadIdx.y;
+	if (vertexIndex < V) {
+		int *edgesIndex = deviceStructures.edgesIndex, *edges = deviceStructures.edges;
+
+		int concurrentNeighbours = blockDim.x;	// Manul: threads per vertex
+		// int hashTablesOffset = threadIdx.y * prime;
+
+        // if (threadIdx.x == 0) {
+		//     vertexToCurrentCommunity[threadIdx.y] = 0;
+		// }
+
+		// Manul: this loop just fills all entries of hashWeight with 0 and hashCommunity with -1
+		// Manul: suppose blockDim.x = concurrentNeighbours = 4. Then thread with x index
+		// Manul: equal to 0 will process the 0th, 4th, 8th, ... neighbours of this vertex (threadIdx.y)
+		// for (unsigned int i = threadIdx.x; i < prime; i += concurrentNeighbours) {
+		// 	hashWeight[hashTablesOffset + i] = 0;
+		// 	hashCommunity[hashTablesOffset + i] = -1;
+		// }
+
+		// Manul: TODO: Check if should be commented
+		// if (concurrentNeighbours > WARP_SIZE)
+		// 	__syncthreads();
+
+		int vertex = vertices[vertexIndex].node;
+		// int currentCommunity = vertexCommunity[vertex];
+		// int bestCommunity = currentCommunity;
+		// float bestGain = 0;
+
+		/*** commented ***/
+		if(threadIdx.x == 0) {
+			finalNodeEval[vertex] = 1;
+		}
+		/*** commented ***/
+
+		// putting data in hash table
+		// Manul: the thread with x = 0 will process the 0th, (0+blockDim.x)th, ... neighbours of vertex
+		int neighbourIndex = threadIdx.x + edgesIndex[vertex];
+		int upperBound = edgesIndex[vertex + 1];
+
+		while (neighbourIndex < upperBound) {
+			int neighbour = edges[neighbourIndex];
+			// int community = vertexCommunity[neighbour];
+			
+			finalNodeEval[neighbour] = 1;
+			neighbourIndex += concurrentNeighbours;
+		}
+		
+	}
+}
+
+
 struct isInBucket
 {
 	isInBucket(int llowerBound, int uupperBound, int *eedgesIndex) {
@@ -433,17 +522,166 @@ struct isInBucketSV
 	}
 };
 
-__global__ void computeNodeEval(int V, int *nodeEval, int *commEval, device_structures deviceStructures) {
+struct isInBucketEval
+{
+	isInBucketEval(int llowerBound, int uupperBound, int *eedgesIndex, int *nnodeEval) {
+		lowerBound = llowerBound;
+		upperBound = uupperBound;
+		edgesIndex = eedgesIndex;
+		nodeEval = nnodeEval;
+	}
+
+	int lowerBound, upperBound;
+	int *edgesIndex, *nodeEval;
+	__host__ __device__
+	bool operator()(const nodeIndex &v) const
+	{
+		int edgesNumber = edgesIndex[v.node + 1] - edgesIndex[v.node];
+		return nodeEval[v.node] && (edgesNumber > lowerBound && edgesNumber <= upperBound);
+	}
+};
+
+__global__ void computeNodeEval(int V, int *finalNodeEval, int *commEval, int *R, int *R_size, device_structures deviceStructures) {
 	int vertex = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if(vertex < V) {
-		if(nodeEval[vertex] == 0) {
+		if(finalNodeEval[vertex] == 0) {
 			int community = deviceStructures.vertexCommunity[vertex];
 			if(commEval[community] == 1) {
-				nodeEval[vertex] = 1;
+				finalNodeEval[vertex] = 1;
 			}
 		}
+		if(finalNodeEval[vertex] == 1) {
+			R[atomicAdd(R_size, 1)] = vertex;
+		}
 	}
+}
+
+int* computeFinalNodeEval_gpu(device_structures& deviceStructures, host_structures& hostStructures, vector<nodeIndex>& sourceVerticesNI, int* nodeEval, nodeIndex *partition) {
+	int svCount = sourceVerticesNI.size();
+	
+	int lastBucketNum = bucketsSize - 2;
+    dim3 lastBlockDimension = dims[lastBucketNum];
+
+	cout << "Before partition" << endl;
+
+	auto predicate = isInBucketEval(buckets[lastBucketNum], buckets[lastBucketNum + 1], hostStructures.edgesIndex, nodeEval);		// Manul: TODO: check if it works
+
+	/***/
+	// nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);				//
+	/***/
+    
+	cout << "After partition" << endl;
+
+	/***/
+	// int verticesInLastBucket = thrust::distance(partition, deviceVerticesEnd);
+	/***/
+
+    cout << "Point 1M" << endl;
+
+	/***/
+    // int* primes_d;		// Manul change
+	// int *hashCommunity;
+	// float *hashWeight;
+	/***/
+
+	// assert(hashOffsetsSV.size() == svCount+1);
+
+	// HANDLE_ERROR(cudaMalloc((void**)&primes_d, (svCount + 1) * sizeof(int)));		// free it
+	// HANDLE_ERROR(cudaMemcpy(primes_d, &hashOffsetsSV[0], (svCount + 1) * sizeof(int), cudaMemcpyHostToDevice));
+
+	/***/
+    // if (verticesInLastBucket > 0) {
+
+	// 	/* Manul change start */
+	// 	nodeIndex* partition_h = (nodeIndex*) malloc(verticesInLastBucket * sizeof(nodeIndex));
+	// 	int* primes_h = (int*) malloc((verticesInLastBucket + 1) * sizeof(int));
+	// 	HANDLE_ERROR(cudaMemcpy(partition_h, partition, verticesInLastBucket * sizeof(nodeIndex), cudaMemcpyDeviceToHost));
+	// 	primes_h[0] = 0;
+	// 	for(int vi = 0; vi < verticesInLastBucket; vi++) {
+	// 		int v = partition_h[vi].node;
+	// 		// int v_ind = partition_h[vi].index;
+	// 		int degv = hostStructures.edgesIndex[v+1] - hostStructures.edgesIndex[v];
+	// 		primes_h[vi + 1] = primes_h[vi] + getPrime(degv * 1.5);
+	// 	}
+	// 	HANDLE_ERROR(cudaMalloc((void**)&primes_d, (verticesInLastBucket + 1) * sizeof(int)));		// free it done
+	// 	HANDLE_ERROR(cudaMemcpy(primes_d, primes_h, (verticesInLastBucket + 1) * sizeof(int), cudaMemcpyHostToDevice));
+	// 	/* Manul change end */
+
+
+	// 	HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, primes_h[verticesInLastBucket] * sizeof(int)));		// Manul change free it done
+    //     HANDLE_ERROR(cudaMalloc((void**)&hashWeight, primes_h[verticesInLastBucket] * sizeof(float)));		// Manul change free it done
+
+	// 	free(partition_h);
+	// 	free(primes_h);
+    // }
+	/***/
+
+	int *finalNodeEval;
+	HANDLE_ERROR(cudaMalloc((void**)&finalNodeEval, hostStructures.V * sizeof(int))); // free it done
+	HANDLE_ERROR(cudaMemset(finalNodeEval, 0, hostStructures.V * sizeof(int)));
+
+	cout << "Point 2M" << endl;
+
+    for(int bucketNum= 0; bucketNum < bucketsSize - 2; bucketNum++) {
+        dim3 blockDimension = dims[bucketNum];
+        // int prime = primes[bucketNum];
+        auto predicate = isInBucketEval(buckets[bucketNum], buckets[bucketNum + 1], hostStructures.edgesIndex, nodeEval);
+        nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);			//
+        int verticesInBucket = thrust::distance(partition, deviceVerticesEnd);
+        if (verticesInBucket > 0) {
+            // int sharedMemSize =
+            //         blockDimension.y * prime * (sizeof(float) + sizeof(int)) + blockDimension.y * sizeof(float);
+            // if (blockDimension.x > WARP_SIZE)
+            //     sharedMemSize += THREADS_PER_BLOCK * (sizeof(int) + sizeof(float));
+            int blocksNum = (verticesInBucket + blockDimension.y - 1) / blockDimension.y;
+
+			// HANDLE_ERROR(cudaMalloc((void**)&hashCommunity[bucketNum], prime * verticesInBucket * sizeof(int)));		// Manul change free it
+
+			// computeCommunitiesSVGeneral<<<blocksNum, blockDimension>>>(verticesInBucket, partition, edgesSV_d, newEdgesIndex_d, prime, deviceStructures, hashCommunity[bucketNum]);
+
+            // computeBestCommShared<<<blocksNum, blockDimension, sharedMemSize>>>(verticesInBucket, partition, prime, deviceStructures, nodeEval, commEval);
+
+			computeFinalNodeEval<<<blocksNum, blockDimension>>>(verticesInBucket, partition, deviceStructures, finalNodeEval);
+
+			// // updating vertex -> community assignment
+            // updateVertexCommunity<<<blocksNumber(V, 1), THREADS_PER_BLOCK>>>(verticesInBucket, partition,
+            //                                                                     deviceStructures);
+            // // updating community weight
+            // thrust::fill(thrust::device, deviceStructures.communityWeight,
+            //                 deviceStructures.communityWeight + hostStructures.V, (float) 0);
+            // computeCommunityWeight<<<blocksNumber(V, 1), THREADS_PER_BLOCK>>>(deviceStructures);
+        }
+    }
+
+    cout << "Point 3M" << endl;
+
+
+    // last bucket case
+    nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);		//
+    int verticesInBucket = thrust::distance(partition, deviceVerticesEnd);
+    if (verticesInBucket > 0) {
+        unsigned int blocksNum = (verticesInBucket + lastBlockDimension.y - 1) / lastBlockDimension.y;
+        // int sharedMemSize = THREADS_PER_BLOCK * (sizeof(int) + sizeof(float)) + lastBlockDimension.y * sizeof(float);
+        // computeMoveGlobal<<<blocksNum, lastBlockDimension, sharedMemSize>>>(
+                // verticesInBucket, partition, lastBucketPrime,deviceStructures, hashCommunity, hashWeight);	// Manul change
+		// computeCommunitiesSVLastBucket<<<blocksNum, lastBlockDimension>>>(verticesInBucket, partition, edgesSV_d, newEdgesIndex_d, primes_d, deviceStructures, hashCommunity[lastBucketNum]);
+        // computeBestCommGlobal<<<blocksNum, lastBlockDimension, sharedMemSize>>>(
+        //         verticesInBucket, partition, primes_d, deviceStructures, hashCommunity, hashWeight, nodeEval, commEval);	// Manul change
+		computeFinalNodeEval<<<blocksNum, lastBlockDimension>>>(verticesInBucket, partition, deviceStructures, finalNodeEval);
+
+		/***/
+		// HANDLE_ERROR(cudaFree(hashCommunity));
+        // HANDLE_ERROR(cudaFree(hashWeight));
+		// HANDLE_ERROR(cudaFree(primes_d));
+		/***/
+		// HANDLE_ERROR(cudaFree(partition));
+    }
+
+	// Manul: partition unfreed
+	// Manul: finalNodeEval unfreed
+
+	return finalNodeEval;
 }
 
 nodeIndex* computeCommunities_gpu(device_structures& deviceStructures, vector<pair<unsigned int, unsigned int>>& newEdges, vector<int>& newEdgesIndex, vector<int>& edgesSV, vector<nodeIndex>& sourceVerticesNI, int *hashCommunitySV[]) {
@@ -517,6 +755,7 @@ nodeIndex* computeCommunities_gpu(device_structures& deviceStructures, vector<pa
         deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);			//
         int verticesInBucket = thrust::distance(partition, deviceVerticesEnd);
         if (verticesInBucket > 0) {
+			cout << " - bucketNum " << bucketNum << " " << verticesInBucket << endl;
             // int sharedMemSize =
             //         blockDimension.y * prime * (sizeof(float) + sizeof(int)) + blockDimension.y * sizeof(float);
             // if (blockDimension.x > WARP_SIZE)
@@ -573,8 +812,14 @@ nodeIndex* computeCommunities_gpu(device_structures& deviceStructures, vector<pa
 /* 
  * @param newEdges      List of newly added edges, sorted by source vertices
  */
-void nodeEval_add_gpu(device_structures& deviceStructures, host_structures& hostStructures, std::vector<pair<unsigned int, unsigned int>>& newEdges, vector<int>& R) {
+int nodeEval_add_gpu(device_structures& deviceStructures, host_structures& hostStructures, std::vector<pair<unsigned int, unsigned int>>& newEdges) {
 	cout << "nodeEval_add_gpu starts" << endl;
+
+	// remove
+	printf("Init MM in nodeEval_add_gpu : %f\n", hostStructures.M);
+	
+	HANDLE_ERROR(cudaMemcpyToSymbol(MM, &hostStructures.M, sizeof(float)));
+
 	// printf("Before modularity optimization:\n");
 	// int* devVertexCommunity = (int*) malloc(sizeof(int));
 	// for(int i = 0; i < hostStructures.V; i++) {
@@ -625,6 +870,10 @@ void nodeEval_add_gpu(device_structures& deviceStructures, host_structures& host
 
 	HANDLE_ERROR(cudaMalloc((void**)&nodeEval, hostStructures.V * sizeof(int))); // free it done
 	HANDLE_ERROR(cudaMalloc((void**)&commEval, hostStructures.V * sizeof(int))); // free it done
+
+	// Manul: TODO: These memsets are needed, right?
+	HANDLE_ERROR(cudaMemset(nodeEval, 0, hostStructures.V * sizeof(int)));
+	HANDLE_ERROR(cudaMemset(commEval, 0, hostStructures.V * sizeof(int)));
 
 	cout << "NEG 3" << endl;
 
@@ -731,7 +980,7 @@ void nodeEval_add_gpu(device_structures& deviceStructures, host_structures& host
 		HANDLE_ERROR(cudaFree(hashCommunity));
         HANDLE_ERROR(cudaFree(hashWeight));
 		HANDLE_ERROR(cudaFree(primes_d));
-		HANDLE_ERROR(cudaFree(partition));
+		// HANDLE_ERROR(cudaFree(partition));
     }
 
 	for(int i = 0; i < bucketsSize - 1; i++) {
@@ -740,23 +989,57 @@ void nodeEval_add_gpu(device_structures& deviceStructures, host_structures& host
 		}
 	}
 
+	int* finalNodeEval = computeFinalNodeEval_gpu(deviceStructures, hostStructures, sourceVerticesNI, nodeEval, partition);
+
+	HANDLE_ERROR(cudaFree(partition));
+	HANDLE_ERROR(cudaFree(nodeEval));
+
+
+	int* R_array = deviceStructures.partition;
+	// HANDLE_ERROR(cudaMalloc((void**)&R_array, hostStructures.V * sizeof(int))); // free it
+	
+	int* R_size;
+	HANDLE_ERROR(cudaMalloc((void**)&R_size, sizeof(int))); // free it done
+	HANDLE_ERROR(cudaMemset(R_size, 0, sizeof(int)));
+
 	const int V_PER_BLOCK = 512;
 	int blocksNum = (hostStructures.V + V_PER_BLOCK - 1) / V_PER_BLOCK;
-	computeNodeEval<<<blocksNum, V_PER_BLOCK>>>(hostStructures.V, nodeEval, commEval, deviceStructures);
+	computeNodeEval<<<blocksNum, V_PER_BLOCK>>>(hostStructures.V, finalNodeEval, commEval, R_array, R_size, deviceStructures);
 
 	HANDLE_ERROR(cudaFree(commEval));
 
-	int *nodeEval_h = (int*) malloc(hostStructures.V * sizeof(int));	// free it done
-	HANDLE_ERROR(cudaMemcpy(nodeEval_h, nodeEval, hostStructures.V * sizeof(int), cudaMemcpyDeviceToHost));
+	// int *nodeEval_h = (int*) malloc(hostStructures.V * sizeof(int));	// free it done
+	// HANDLE_ERROR(cudaMemcpy(nodeEval_h, finalNodeEval, hostStructures.V * sizeof(int), cudaMemcpyDeviceToHost));
 
-	HANDLE_ERROR(cudaFree(nodeEval));
+	HANDLE_ERROR(cudaFree(finalNodeEval));
 
-	R.clear();
-	for(int i = 0; i < hostStructures.V; i++) {
-		if(nodeEval_h[i] == 1) R.push_back(i); 
-	}
+	// R.clear();
+	// for(int i = 0; i < hostStructures.V; i++) {
+	// 	if(nodeEval_h[i] == 1) R.push_back(i); 
+	// }
 
-	free(nodeEval_h);
+	// free(nodeEval_h);
+
+	int R_size_h;
+	HANDLE_ERROR(cudaMemcpy(&R_size_h, R_size, sizeof(int), cudaMemcpyDeviceToHost));
+
+	HANDLE_ERROR(cudaFree(R_size));
+
+	// R_array unfreed
+
+	// assert(R_size_h == R.size());
+
+	// remove
+	// int* R_gpu = (int*) malloc(R_size_h * sizeof(int));	// free it done
+
+	// HANDLE_ERROR(cudaMemcpy(R_gpu, R_array, R_size_h * sizeof(int), cudaMemcpyDeviceToHost));
+
+	// sort(R_gpu, R_gpu + R_size_h);
+	// sort(R.begin(), R.end());
+
+	// for(int i = 0; i < R_size_h; i++) { cout << R[i] << " " << R_gpu[i]; assert(R[i] == R_gpu[i]); }
+
+	// free(R_gpu);
 
 	// printf("After modularity optimization:\n");
 	// for(int i = 0; i < hostStructures.V; i++) {
@@ -765,5 +1048,298 @@ void nodeEval_add_gpu(device_structures& deviceStructures, host_structures& host
 	// printf("\n");
 
 	cout << "Point 6M" << endl;
+
+	return R_size_h;
+
+}
+
+__global__ void computeCommunitiesDelSV(int V, nodeIndex *vertices, int *edges, int *edgesIndex, int *commEval, int *nodeEval, device_structures deviceStructures) {
+	int verticesPerBlock = blockDim.y;
+	int vertexIndex = blockIdx.x * verticesPerBlock + threadIdx.y;
+	if (vertexIndex < V) {
+		int* vertexCommunity = deviceStructures.vertexCommunity;
+		// extern __shared__ int s[];
+		// auto *vertexToCurrentCommunity = (float *) s;
+		// float *bestGains = &vertexToCurrentCommunity[verticesPerBlock];
+		// int *bestCommunities = (int *) &bestGains[THREADS_PER_BLOCK];
+		nodeIndex vertex = vertices[vertexIndex];
+		int currentCommunity = vertexCommunity[vertex.node];
+		// int prime = primes[vertex.index + 1] - primes[vertex.index];
+		int concurrentNeighbours = blockDim.x;
+		// int hashTablesOffset = threadIdx.y * prime;
+
+		// if(threadIdx.x == 0) {
+		// 	vertices[vertexIndex].prime = prime;
+		// 	vertices[vertexIndex].hashCommunity = hashCommunity + hashTablesOffset;
+		// }
+
+		// hashWeight = hashWeight + primes[blockIdx.x];
+		// computeMove(V, vertices, primes[blockIdx.x+1] - primes[blockIdx.x], deviceStructures, hashCommunity, hashWeight, vertexToCurrentCommunity,
+		// 			bestGains, bestCommunities);
+		// for (unsigned int i = threadIdx.x; i < prime; i += concurrentNeighbours) {
+		// 	hashCommunity[hashTablesOffset + i] = -1;
+		// }
+
+		// Manul: TODO: check
+		// if (concurrentNeighbours > WARP_SIZE)
+		// 	__syncthreads();
+		
+		// insertCommunityInHashTable(hashCommunity, currentCommunity, prime, hashTablesOffset);
+
+		int neighbourIndex = threadIdx.x + edgesIndex[vertex.index];
+		int upperBound = edgesIndex[vertex.index + 1];
+
+		while (neighbourIndex < upperBound) {
+			int neighbour = edges[neighbourIndex];
+			int community = vertexCommunity[neighbour];
+
+			// if(currentCommunity != community) {
+			// 	insertCommunityInHashTable(hashCommunity, community, prime, hashTablesOffset);
+			// }
+
+			if(currentCommunity == community) {
+				commEval[currentCommunity] = 1;
+				nodeEval[vertex.node] = 1;
+			}
+			neighbourIndex += concurrentNeighbours;
+		}
+	}
+}
+
+
+nodeIndex* computeCommunitiesDel_gpu(device_structures& deviceStructures, vector<pair<unsigned int, unsigned int>>& newEdges, vector<int>& newEdgesIndex, vector<int>& edgesSV, vector<nodeIndex>& sourceVerticesNI, int *commEval, int *nodeEval) {
+	int svCount = sourceVerticesNI.size();
+	
+	int *newEdgesIndex_d, *edgesSV_d;
+	HANDLE_ERROR(cudaMalloc((void**)&newEdgesIndex_d, newEdgesIndex.size() * sizeof(int)));	// free it Done
+	HANDLE_ERROR(cudaMemcpy(newEdgesIndex_d, &newEdgesIndex[0], newEdgesIndex.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+	HANDLE_ERROR(cudaMalloc((void**)&edgesSV_d, edgesSV.size() * sizeof(int)));	// free it Done
+	HANDLE_ERROR(cudaMemcpy(edgesSV_d, &edgesSV[0], edgesSV.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+
+    int lastBucketNum = bucketsSize - 2;
+    dim3 lastBlockDimension = dims[lastBucketNum];
+    auto predicate = isInBucketSV(buckets[lastBucketNum], buckets[lastBucketNum + 1], newEdgesIndex_d);		// Manul: TODO: check if it works
+
+    nodeIndex *partition;
+	HANDLE_ERROR(cudaMalloc((void**)&partition, svCount*sizeof(nodeIndex)));		// free it done
+	// thrust::sequence(thrust::device, partition, partition + V, 0);	// ?
+	HANDLE_ERROR(cudaMemcpy(partition, &sourceVerticesNI[0], svCount * sizeof(nodeIndex), cudaMemcpyHostToDevice));		
+
+	cout << "comcom gpu part" << endl;
+    
+    // nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);				//
+    // int verticesInLastBucket = thrust::distance(partition, deviceVerticesEnd);
+
+	cout << "comcom gpu part done" << endl;
+    
+    cout << "Point 1M" << endl;
+
+    // int* primesSV_d;		// Manul change
+
+	// assert(hashOffsetsSV.size() == svCount+1);
+
+	// HANDLE_ERROR(cudaMalloc((void**)&primesSV_d, (svCount + 1) * sizeof(int)));		// free it
+	// HANDLE_ERROR(cudaMemcpy(primesSV_d, &hashOffsetsSV[0], (svCount + 1) * sizeof(int), cudaMemcpyHostToDevice));
+
+    // if (verticesInLastBucket > 0) {
+
+	// 	/* Manul change start */
+	// 	nodeIndex* partition_h = (nodeIndex*) malloc(verticesInLastBucket * sizeof(nodeIndex));
+	// 	int* primes_h = (int*) malloc((verticesInLastBucket + 1) * sizeof(int));
+	// 	HANDLE_ERROR(cudaMemcpy(partition_h, partition, verticesInLastBucket * sizeof(nodeIndex), cudaMemcpyDeviceToHost));
+	// 	primes_h[0] = 0;
+	// 	for(int vi = 0; vi < verticesInLastBucket; vi++) {
+	// 		// int v = partition_h[vi].node;
+	// 		int v_ind = partition_h[vi].index;
+	// 		int degv = newEdgesIndex[v_ind+1] - newEdgesIndex[v_ind];
+	// 		primes_h[vi + 1] = primes_h[vi] + getPrime(degv * 1.5);
+	// 	}
+	// 	HANDLE_ERROR(cudaMalloc((void**)&primesSV_d, (verticesInLastBucket + 1) * sizeof(int)));		// free it Done
+	// 	HANDLE_ERROR(cudaMemcpy(primesSV_d, primes_h, (verticesInLastBucket + 1) * sizeof(int), cudaMemcpyHostToDevice));
+	// 	/* Manul change end */
+
+
+	// 	HANDLE_ERROR(cudaMalloc((void**)&hashCommunitySV[bucketsSize-2], primes_h[verticesInLastBucket] * sizeof(int)));		// Manul change free it done
+    //     // HANDLE_ERROR(cudaMalloc((void**)&hashWeight, primes_h[verticesInLastBucket] * sizeof(float)));		// Manul change
+
+	// 	free(partition_h);
+	// 	free(primes_h);
+    // }
+
+	cout << "Point 2M" << endl;
+
+    for(int bucketNum= 0; bucketNum < bucketsSize - 2; bucketNum++) {
+        dim3 blockDimension = dims[bucketNum];
+        // int prime = primes[bucketNum];
+        auto predicate = isInBucketSV(buckets[bucketNum], buckets[bucketNum + 1], newEdgesIndex_d);
+        nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);			//
+        int verticesInBucket = thrust::distance(partition, deviceVerticesEnd);
+        if (verticesInBucket > 0) {
+			cout << " - bucketNum " << bucketNum << " " << verticesInBucket << endl;
+            // int sharedMemSize =
+            //         blockDimension.y * prime * (sizeof(float) + sizeof(int)) + blockDimension.y * sizeof(float);
+            // if (blockDimension.x > WARP_SIZE)
+            //     sharedMemSize += THREADS_PER_BLOCK * (sizeof(int) + sizeof(float));
+            int blocksNum = (verticesInBucket + blockDimension.y - 1) / blockDimension.y;
+
+			// HANDLE_ERROR(cudaMalloc((void**)&hashCommunitySV[bucketNum], prime * verticesInBucket * sizeof(int)));		// Manul change free it done
+
+			// computeCommunitiesSVGeneral<<<blocksNum, blockDimension>>>(verticesInBucket, partition, edgesSV_d, newEdgesIndex_d, prime, deviceStructures, hashCommunitySV[bucketNum]);
+
+			computeCommunitiesDelSV<<<blocksNum, blockDimension>>>(verticesInBucket, partition, edgesSV_d, newEdgesIndex_d, commEval, nodeEval, deviceStructures);
+
+            // computeMoveShared<<<blocksNum, blockDimension, sharedMemSize>>>(verticesInBucket, partition, prime,
+            //                                                                     deviceStructures);
+            
+			
+			// // updating vertex -> community assignment
+            // updateVertexCommunity<<<blocksNumber(V, 1), THREADS_PER_BLOCK>>>(verticesInBucket, partition,
+            //                                                                     deviceStructures);
+            // // updating community weight
+            // thrust::fill(thrust::device, deviceStructures.communityWeight,
+            //                 deviceStructures.communityWeight + hostStructures.V, (float) 0);
+            // computeCommunityWeight<<<blocksNumber(V, 1), THREADS_PER_BLOCK>>>(deviceStructures);
+        }
+    }
+
+    cout << "Point 3M" << endl;
+
+
+    // last bucket case
+    nodeIndex *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + svCount, predicate);		//
+    int verticesInBucket = thrust::distance(partition, deviceVerticesEnd);
+    if (verticesInBucket > 0) {
+        unsigned int blocksNum = (verticesInBucket + lastBlockDimension.y - 1) / lastBlockDimension.y;
+        // int sharedMemSize = THREADS_PER_BLOCK * (sizeof(int) + sizeof(float)) + lastBlockDimension.y * sizeof(float);
+        // computeMoveGlobal<<<blocksNum, lastBlockDimension, sharedMemSize>>>(
+                // verticesInBucket, partition, lastBucketPrime,deviceStructures, hashCommunity, hashWeight);	// Manul change
+		// computeCommunitiesSVLastBucket<<<blocksNum, lastBlockDimension>>>(verticesInBucket, partition, edgesSV_d, newEdgesIndex_d, primesSV_d, deviceStructures, hashCommunitySV[lastBucketNum]);
+
+		computeCommunitiesDelSV<<<blocksNum, lastBlockDimension>>>(verticesInBucket, partition, edgesSV_d, newEdgesIndex_d, commEval, nodeEval, deviceStructures);
+
+        // computeMoveGlobal2<<<blocksNum, lastBlockDimension, sharedMemSize>>>(
+        //         verticesInBucket, partition, primes_d, deviceStructures, hashCommunity, hashWeight);	// Manul change
+
+		// HANDLE_ERROR(cudaFree(primesSV_d));
+    }
+
+	HANDLE_ERROR(cudaFree(newEdgesIndex_d));
+	HANDLE_ERROR(cudaFree(edgesSV_d));
+
+	// Manul: partition is still unfreed 
+
+	return partition;
+}
+
+
+/* 
+ * @param newEdges      List of newly added edges, sorted by source vertices
+ */
+int nodeEval_del_gpu(device_structures& deviceStructures, host_structures& hostStructures, std::vector<pair<unsigned int, unsigned int>>& newEdges) {
+	cout << "nodeEval_del_gpu starts" << endl;
+
+	// remove
+	printf("Init MM in nodeEval_del_gpu : %f\n", hostStructures.M);
+	
+	HANDLE_ERROR(cudaMemcpyToSymbol(MM, &hostStructures.M, sizeof(float)));
+
+
+	vector<int> sourceVertices, newEdgesIndex, edgesSV;
+	vector<nodeIndex> sourceVerticesNI;
+    int prevVertex = -1;
+	int count = 0;
+
+    for (int i = 0; i < newEdges.size(); i++)
+    {
+        int vertex = newEdges[i].first;
+        if(vertex != prevVertex) {
+			sourceVertices.push_back(vertex);
+            sourceVerticesNI.emplace_back(vertex, count++);
+            
+            prevVertex = vertex;
+			// if(i > 0) {
+			// 	int primeSV = getPrime((i - newEdgesIndex.back()) * 1.5);
+			// 	primesSV.push_back(primeSV);
+			// 	hashOffsetsSV.push_back(hashOffsetsSV.back() + primeSV);
+			// }
+			newEdgesIndex.push_back(i);
+        }
+		edgesSV.push_back(newEdges[i].second);
+    }
+
+	cout << "NEG 1" << endl;
+
+	// int primeSV = getPrime((newEdges.size() - newEdgesIndex.back()) * 1.5);
+	// primesSV.push_back(primeSV);
+	// hashOffsetsSV.push_back(hashOffsetsSV.back() + primeSV);
+
+    int svCount = sourceVerticesNI.size();
+    newEdgesIndex.push_back(newEdges.size());
+
+	int *nodeEval, *commEval;
+
+	HANDLE_ERROR(cudaMalloc((void**)&nodeEval, hostStructures.V * sizeof(int))); // free it 
+	HANDLE_ERROR(cudaMalloc((void**)&commEval, hostStructures.V * sizeof(int))); // free it 
+
+	// Manul: TODO: These memsets are needed, right?
+	HANDLE_ERROR(cudaMemset(nodeEval, 0, hostStructures.V * sizeof(int)));
+	HANDLE_ERROR(cudaMemset(commEval, 0, hostStructures.V * sizeof(int)));
+
+	nodeIndex *partition = computeCommunitiesDel_gpu(deviceStructures, newEdges, newEdgesIndex, edgesSV, sourceVerticesNI, commEval, nodeEval);
+
+	int *finalNodeEval = computeFinalNodeEval_gpu(deviceStructures, hostStructures, sourceVerticesNI, nodeEval, partition);
+
+	HANDLE_ERROR(cudaFree(nodeEval));
+	HANDLE_ERROR(cudaFree(partition));
+
+	int* R_array = deviceStructures.partition;
+	// HANDLE_ERROR(cudaMalloc((void**)&R_array, hostStructures.V * sizeof(int))); // free it
+	
+	int* R_size;
+	HANDLE_ERROR(cudaMalloc((void**)&R_size, sizeof(int))); // free it done
+	HANDLE_ERROR(cudaMemset(R_size, 0, sizeof(int)));
+
+	const int V_PER_BLOCK = 512;
+	int blocksNum = (hostStructures.V + V_PER_BLOCK - 1) / V_PER_BLOCK;
+	computeNodeEval<<<blocksNum, V_PER_BLOCK>>>(hostStructures.V, finalNodeEval, commEval, R_array, R_size, deviceStructures);
+
+	HANDLE_ERROR(cudaFree(commEval));
+
+	// int *nodeEval_h = (int*) malloc(hostStructures.V * sizeof(int));	// free it done
+	// HANDLE_ERROR(cudaMemcpy(nodeEval_h, finalNodeEval, hostStructures.V * sizeof(int), cudaMemcpyDeviceToHost));
+
+	HANDLE_ERROR(cudaFree(finalNodeEval));
+
+	// R.clear();
+	// for(int i = 0; i < hostStructures.V; i++) {
+	// 	if(nodeEval_h[i] == 1) R.push_back(i); 
+	// }
+
+	// free(nodeEval_h);
+
+	int R_size_h;
+	HANDLE_ERROR(cudaMemcpy(&R_size_h, R_size, sizeof(int), cudaMemcpyDeviceToHost));
+
+	HANDLE_ERROR(cudaFree(R_size));
+
+	// R_array unfreed
+
+	// assert(R_size_h == R.size());
+
+	// remove
+	// int* R_gpu = (int*) malloc(R_size_h * sizeof(int));	// free it done
+
+	// HANDLE_ERROR(cudaMemcpy(R_gpu, R_array, R_size_h * sizeof(int), cudaMemcpyDeviceToHost));
+
+	// sort(R_gpu, R_gpu + R_size_h);
+	// sort(R.begin(), R.end());
+
+	// for(int i = 0; i < R_size_h; i++) { cout << R[i] << " " << R_gpu[i]; assert(R[i] == R_gpu[i]); }
+
+	// free(R_gpu);
+
+	return R_size_h;
 
 }

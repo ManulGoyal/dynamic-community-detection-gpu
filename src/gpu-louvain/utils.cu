@@ -174,9 +174,14 @@ void init_partition(host_structures& hostStructures, int* comm_size, char *filen
 }
 
 void init_partition(host_structures& hostStructures, int* comm_size, std::vector<int>& n2c) {
+	cout << "INIT PART starts" << endl;
+	
 	assert(n2c.size() == hostStructures.V);
 
 	float* vertexEdgeWeights = (float*) malloc(hostStructures.V*sizeof(float));
+
+	cout << "After malloc" << endl;
+	
 	for(int j = 0; j < hostStructures.V; j++) {
 		vertexEdgeWeights[j] = hostStructures.communityWeight[j];
 		hostStructures.communityWeight[j] = 0;

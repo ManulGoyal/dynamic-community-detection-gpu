@@ -13,12 +13,15 @@ class GPUWrapper {
 	bool initPart;
 	Louvain* c;
 	float memoryTime;
+	int R_size;
 
 public:
 
     GPUWrapper(Louvain* c, std::vector<int>& n2c, bool initPart);
 
-	void gpuNodeEvalAdd(vector<pair<unsigned int, unsigned int>>& newEdges);
+	int gpuNodeEvalAdd(vector<pair<unsigned int, unsigned int>>& newEdges);
+
+	int gpuNodeEvalDel(vector<pair<unsigned int, unsigned int>>& newEdges);
 
     void gpuLouvain(std::vector<int>& n2c);
 };

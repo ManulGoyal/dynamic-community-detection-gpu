@@ -12,6 +12,7 @@
 GPUWrapper::GPUWrapper(Louvain* c, std::vector<int>& n2c, bool initPart = false) {
 	this->initPart = initPart;
 	this->c = c;
+	this->R_size = (c->qual->size);
 
 	// std::cout << "hostStructures init started" << endl;
 	hostStructures = convertToHostStructures(c->qual->g);
@@ -31,6 +32,9 @@ GPUWrapper::GPUWrapper(Louvain* c, std::vector<int>& n2c, bool initPart = false)
 
 	if(initPart) {
 		comm_size = (int*) malloc(hostStructures.V * sizeof(int));
+
+		cout << "After comm_size malloc" << endl;
+
 		init_partition(hostStructures, comm_size, n2c);
 	}
 
@@ -77,10 +81,18 @@ GPUWrapper::GPUWrapper(Louvain* c, std::vector<int>& n2c, bool initPart = false)
 	HANDLE_ERROR(cudaEventElapsedTime(&memoryTime, start, stop));
 }
 
-void GPUWrapper::gpuNodeEvalAdd(vector<pair<unsigned int, unsigned int>>& newEdges) {
-	nodeEval_add_gpu(deviceStructures, hostStructures, newEdges, c->qual->R);
+int GPUWrapper::gpuNodeEvalAdd(vector<pair<unsigned int, unsigned int>>& newEdges) {
+	R_size = nodeEval_add_gpu(deviceStructures, hostStructures, newEdges);
 
-	cout << "Size of R = " << (c->qual->R.size()) << endl;
+	cout << "Size of R = " << (R_size) << endl;
+	return R_size;
+}
+
+int GPUWrapper::gpuNodeEvalDel(vector<pair<unsigned int, unsigned int>>& newEdges) {
+	R_size = nodeEval_del_gpu(deviceStructures, hostStructures, newEdges);
+
+	cout << "Size of R = " << (R_size) << endl;
+	return R_size;
 }
 
 void GPUWrapper::gpuLouvain(std::vector<int>& n2c) {
@@ -90,12 +102,13 @@ void GPUWrapper::gpuLouvain(std::vector<int>& n2c) {
 	HANDLE_ERROR(cudaEventCreate(&stop));
 	HANDLE_ERROR(cudaEventRecord(start, 0));
 
+	int level_cnt = 0;
 	///
 	bool onceMore = initPart;
-	for (int level = 0;; level++) {
-		cout << "level " << level << endl;
-		if(level == 0 && (c->qual->R.size()) != (c->qual->size)) {
-			if(!optimiseModularityUsingVertexSubset((float)(c->eps_impr), deviceStructures, hostStructures, c->qual->R)) {
+	for (int level = 0;; level++, level_cnt++) {
+		// cout << "level " << level << endl;
+		if(level == 0 && R_size != (c->qual->size)) {
+			if(!optimiseModularityUsingVertexSubset((float)(c->eps_impr), deviceStructures, hostStructures, R_size)) {
 				if(!onceMore) break;
 			}
 		} else {
@@ -113,6 +126,9 @@ void GPUWrapper::gpuLouvain(std::vector<int>& n2c) {
 		// }
 		// printf("\n");
 	}
+
+	cout << "Total levels = " << level_cnt << endl;
+
 	///
 	int V;
 	HANDLE_ERROR(cudaMemcpy(&V, deviceStructures.V, sizeof(int), cudaMemcpyDeviceToHost));

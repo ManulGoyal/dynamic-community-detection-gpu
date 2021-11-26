@@ -2,6 +2,9 @@
 #include <thrust/partition.h>
 #include <vector>
 
+// // trial
+// __constant__ float M;
+
 /**
  * Computes hashing (using double hashing) for open-addressing purposes of arrays in prepareHashArrays function.
  * @param val   value we want to insert
@@ -98,6 +101,10 @@ __device__ float computeGain(int vertex, int community, int currentCommunity, fl
 	float communitySum = communityWeight[community];
 	float currentCommunitySum = communityWeight[currentCommunity] - vertexEdgesSum[vertex];
 	float gain = vertexToCommunity / M + vertexEdgesSum[vertex] * (currentCommunitySum - communitySum) / (2 * M * M);
+
+	// remove
+	// printf("Mod opt mem: M = %f\n", M);
+
 	return gain;
 }
 
@@ -297,6 +304,9 @@ int getMaxDegree(host_structures& hostStructures) {
 }
 
 bool optimiseModularity(float minGain, device_structures& deviceStructures, host_structures& hostStructures) {
+
+	// remove
+	// cout << "minGain = " << minGain << endl;
 	// printf("Before modularity optimization:\n");
 	// int* devVertexCommunity = (int*) malloc(sizeof(int));
 	// for(int i = 0; i < hostStructures.V; i++) {
@@ -341,7 +351,7 @@ bool optimiseModularity(float minGain, device_structures& deviceStructures, host
 		HANDLE_ERROR(cudaMemcpy(primes_d, primes_h, (verticesInLastBucket + 1) * sizeof(int), cudaMemcpyHostToDevice));
 		/* Manul change end */
 
-        unsigned int blocksNum = (verticesInLastBucket + lastBlockDimension.y - 1) / lastBlockDimension.y;
+        // unsigned int blocksNum = (verticesInLastBucket + lastBlockDimension.y - 1) / lastBlockDimension.y;
         // HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, lastBucketPrime * blocksNum	* sizeof(int)));	// Manul change
         // HANDLE_ERROR(cudaMalloc((void**)&hashWeight, lastBucketPrime * blocksNum * sizeof(float)));	// Manul change
 
@@ -403,6 +413,10 @@ bool optimiseModularity(float minGain, device_structures& deviceStructures, host
 		float modularityAfter = calculateModularity(V, hostStructures.M, deviceStructures);
 		totalGain = modularityAfter - modularityBefore;
 		wasAnythingChanged = wasAnythingChanged | (totalGain > 0);
+
+		// remove
+		// cout << "Mod after = " << modularityAfter << endl;
+		// cout << "Gain = " << totalGain << endl;
 	}
 	HANDLE_ERROR(cudaMemcpy(hostStructures.vertexCommunity, deviceStructures.vertexCommunity,
 							hostStructures.V * sizeof(float), cudaMemcpyDeviceToHost));
@@ -422,7 +436,7 @@ bool optimiseModularity(float minGain, device_structures& deviceStructures, host
 	return wasAnythingChanged;
 }
 
-bool optimiseModularityUsingVertexSubset(float minGain, device_structures& deviceStructures, host_structures& hostStructures, std::vector<int>& nodeEval) {
+bool optimiseModularityUsingVertexSubset(float minGain, device_structures& deviceStructures, host_structures& hostStructures, int R_size) {
 	// printf("Before modularity optimization:\n");
 	// int* devVertexCommunity = (int*) malloc(sizeof(int));
 	// for(int i = 0; i < hostStructures.V; i++) {
@@ -432,15 +446,21 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
 	// }
 	// printf("\n");
 	
-	int nodeEvalCount = nodeEval.size();		//
+	int nodeEvalCount = R_size;		//
 
 	int V = hostStructures.V;
 	computeEdgesSum<<<blocksNumber(V, WARP_SIZE), dim3{WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE}>>>(deviceStructures);
     HANDLE_ERROR(cudaMemcpy(hostStructures.edgesIndex, deviceStructures.edgesIndex,(V + 1) * (sizeof(int)), cudaMemcpyDeviceToHost));
 
+	// Manul: TODO: Check if it works
+	// deviceStructures.partition = R_on_gpu.first;
+	
 	int *partition = deviceStructures.partition;
 	// thrust::sequence(thrust::device, partition, partition + V, 0);	// ?
-	HANDLE_ERROR(cudaMemcpy(partition, &nodeEval[0], nodeEvalCount * sizeof(int), cudaMemcpyHostToDevice));											//
+	
+	// commented
+	// HANDLE_ERROR(cudaMemcpy(partition, &nodeEval[0], nodeEvalCount * sizeof(int), cudaMemcpyHostToDevice));	
+	// commented										//
 
 	int lastBucketPrime = getPrime(getMaxDegree(hostStructures) * 1.5);
 	int *hashCommunity;
@@ -451,7 +471,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
     int *deviceVerticesEnd = thrust::partition(thrust::device, partition, partition + nodeEvalCount, predicate);				//
     int verticesInLastBucket = thrust::distance(partition, deviceVerticesEnd);
 
-	cout << "Point 1M" << endl;
+	// cout << "Point 1M" << endl;
 
 	int* primes_d;		// Manul change
     if (verticesInLastBucket > 0) {
@@ -471,7 +491,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
 		/* Manul change end */
 
 
-        unsigned int blocksNum = (verticesInLastBucket + lastBlockDimension.y - 1) / lastBlockDimension.y;
+        // unsigned int blocksNum = (verticesInLastBucket + lastBlockDimension.y - 1) / lastBlockDimension.y;
 
         // HANDLE_ERROR(cudaMalloc((void**)&hashCommunity, lastBucketPrime * blocksNum	* sizeof(int)));		// Manul change
         // HANDLE_ERROR(cudaMalloc((void**)&hashWeight, lastBucketPrime * blocksNum * sizeof(float)));		// Manul change
@@ -483,7 +503,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
 		free(primes_h);
     }
 
-	cout << "Point 2M" << endl;
+	// cout << "Point 2M" << endl;
 
 
 	float totalGain = minGain;
@@ -514,7 +534,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
             }
 		}
 
-		cout << "Point 3M" << endl;
+		// cout << "Point 3M" << endl;
 
 
 		// last bucket case
@@ -529,7 +549,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
 					verticesInBucket, partition, primes_d, deviceStructures, hashCommunity, hashWeight);	// Manul change
 		}
 
-		cout << "Point 4M" << endl;
+		// cout << "Point 4M" << endl;
 
 
         // updating vertex -> community assignment
@@ -544,7 +564,11 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
 		totalGain = modularityAfter - modularityBefore;
 		wasAnythingChanged = wasAnythingChanged | (totalGain > 0);
 
-		cout << "Point 5M" << endl;
+		// cout << "Point 5M" << endl;
+
+		// remove
+		// cout << "Mod after = " << modularityAfter << endl;
+		// cout << "Gain = " << totalGain << endl;
 
 	}
 	HANDLE_ERROR(cudaMemcpy(hostStructures.vertexCommunity, deviceStructures.vertexCommunity,
@@ -562,7 +586,7 @@ bool optimiseModularityUsingVertexSubset(float minGain, device_structures& devic
     }
 	updateOriginalToCommunity<<<blocksNumber(hostStructures.originalV, 1), THREADS_PER_BLOCK>>>(deviceStructures);
 
-	cout << "Point 6M" << endl;
+	// cout << "Point 6M" << endl;
 
 	return wasAnythingChanged;
 }
@@ -625,5 +649,8 @@ void printOriginalToCommunity(device_structures& deviceStructures, host_structur
 }
 
 void initM(host_structures& hostStructures) {
+	// remove
+	printf("Init M : %f\n", hostStructures.M);
+
 	HANDLE_ERROR(cudaMemcpyToSymbol(M, &hostStructures.M, sizeof(float)));
 }
