@@ -67,5 +67,6 @@ ToyExample/cluster*
 ToyExample/comm*
 ToyExample/*.bin
 ToyExample/del-add/
+ToyExample/gpu-full/
 ToyExample2/
 message.txt

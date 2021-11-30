@@ -1131,6 +1131,8 @@ main(int argc, char **argv) {
   gettimeofday(&endTime, NULL);
   double time_for_t0 = (double) ((endTime.tv_sec -startTime.tv_sec )*1000 + (endTime.tv_usec -  startTime.tv_usec)/1000);
   cerr<<"\t Time for step 0:(milliseconds) "<<time_for_t0<<endl;
+  cerr << "\t new_qual= "<<new_qual << endl;
+
   int count_add = 0;
   int count_del = 0;
   vector<int>::iterator it,it2;
@@ -1177,6 +1179,7 @@ main(int argc, char **argv) {
       nodes_in_comm = find_NodCom(s,nb_nodes_b);
       GTOC;   // Manul's Change
 
+      GTIC("IO-clusters del");
       ofstream myfile (clusters.c_str(), ios::app);
       if (myfile.is_open())
       {
@@ -1188,6 +1191,9 @@ main(int argc, char **argv) {
                }
       }
       myfile.close();
+      GTOC;
+
+      GTIC("IO-comm del");
       int idx=0;
       ofstream myfile2(comm.c_str(), ios::app);
       if (myfile2.is_open())
@@ -1201,6 +1207,7 @@ main(int argc, char **argv) {
             }
       }
       myfile2.close();
+      GTOC;
 
 	  //read each file of changes called name, create the new graph, find the affected vertices and apply louvain for them using the previous community structure
 	  if(fexists(name))
@@ -1224,9 +1231,12 @@ main(int argc, char **argv) {
 		nb_calls++;
 		Louvain c1(-1, precision, q);//call louvain constructor
 
+    GTIC("init part n2c del");
     // Manul-Manan: n2c contains the comm corr. to each original node as per the last level of the last time step
     // Manul-Manan: this should be used as the initial partition at the beginning of this time step
 		c1.init_partition_v(n2c);
+    GTOC;
+
 		q->n2c = n2c;
 		struct timeval sTime2, eTime2;
 		gettimeofday(&sTime2, NULL);
@@ -1242,6 +1252,7 @@ main(int argc, char **argv) {
       // Manul-Manan: to the graph.tree file for the current time step
         if((c1.qual)->R.size() == 0)//if  deletion did not make any effect at time step j!=0
          {
+            GTIC("IO-tree del");
             s = "graph"+my2::to_string(count_del)+".tree";
             string line;
             ifstream myfile (s_old);
@@ -1261,7 +1272,9 @@ main(int argc, char **argv) {
             else
                 cout << "Unable to open file";
             myfile2.close();
+            GTOC;
         }
+        
 
 		gettimeofday(&eTime2, NULL);
 		time_per_step2 = (double) ((eTime2.tv_sec -sTime2.tv_sec )*1000 + (eTime2.tv_usec -  sTime2.tv_usec)/1000);
@@ -1272,6 +1285,7 @@ main(int argc, char **argv) {
 		vector<pair<unsigned int,unsigned int> >(vect_new_edges).swap(vect_new_edges);
 
 		cerr<<"R percentage : "<< ((double)(c1.qual)->R.size()/(double)(c1.qual)->g.nb_nodes)*100  <<endl;
+
 		if((c1.qual)->R.size()!=0)
 		{
 		    s = "graph"+my2::to_string(count_del)+".tree";
@@ -1325,6 +1339,7 @@ main(int argc, char **argv) {
 		}
 		else
 		{
+      GTIC("IO-tree 2 del");
 			cerr<<"\t There is no node to reevaluate"<<endl;
 			s = "graph"+my2::to_string(count_del)+".tree";
             string line;
@@ -1345,11 +1360,13 @@ main(int argc, char **argv) {
             else
                 cout << "Unable to open file";
             myfile2.close();
+        GTOC;
 		}
 
 	  }//if(fexists(name))
 	  else
           {//if
+            GTIC("IO-tree 3 del");
             cerr<< "There is no delta_file associated with "<<name<<endl;
             s = "graph"+my2::to_string(count_del)+".tree";
             string line;
@@ -1370,6 +1387,7 @@ main(int argc, char **argv) {
             else
                 cout << "Unable to open file";
             myfile2.close();
+            GTOC;
       }
 
     GTOC;   // Manul's Change
@@ -1399,6 +1417,8 @@ main(int argc, char **argv) {
 	  	it = max_element(n2c.begin(), n2c.end());
 	  	n_comm = *it +1;
 	  	n2c.resize(gr.nb_nodes);//resize the n2c at the next time step
+
+      GTIC("new nodes add");
       // Manul-Manan: iterating over the newly added nodes (if any)
 	  	for(int i=nb_nodes_b;i<nb_nodes_a;i++)
 	  	{
@@ -1415,12 +1435,18 @@ main(int argc, char **argv) {
 	  			n_comm++;
 	  		}
 	  	}
+
+      GTOC;
       // Manul-Manan: Issue: where is n2c being updated? If the deletion of edges leads to changes
       // Manul-Manan: in the comm's, n2c must be updated before being used for edge addition
 	  	init_quality(&g1, nb_calls);
 	  	nb_calls++;
 	  	Louvain c1(-1, precision, q);//call louvain constructor
+
+      GTIC("init part n2c add");
 	  	c1.init_partition_v(n2c);
+      GTOC;
+
 	  	q->n2c = n2c;
 	  	struct timeval sTime2, eTime2;
 	  	gettimeofday(&sTime2, NULL);
