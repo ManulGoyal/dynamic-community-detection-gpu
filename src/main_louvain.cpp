@@ -166,15 +166,15 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
 			  long double w=1.0L;
 			  if (type == WEIGHTED)
 			  {
-				 finput >> start >> end >> w;
 				 if(finput.eof())
 					 break;
+          finput >> start >> end >> w;
 			  }
 			  else
 			  {
-          finput >> start >> end;
           if(finput.eof())
             break;
+          finput >> start >> end;
 			  }
 			  /*******count different types of new edges for edge sampling*****/
         if(start < g->nb_nodes && end <g->nb_nodes)
@@ -422,6 +422,19 @@ vector<vector<int> >find_NodCom(string filename,int n)
 // Manul-Manan: Does not properly update the weights array
 vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph *g)
 {
+
+  // int sm = 0;
+  //       for (int ll = 0; ll < g->degrees.size(); ll++)
+  //       {
+  //         cout << ll << ": ";
+  //         for (int kk = sm; kk < g->degrees[ll]; kk++)
+  //         {
+  //           cout << g->links[kk] << " ";
+  //         }
+  //         sm += g->degrees[ll];
+  //         cout << endl;
+  //       }
+
 	ifstream finput;
 	vector<pair<unsigned int,unsigned int> > vect;
 	vector<int>::iterator it;
@@ -441,16 +454,17 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 			  long double w = 1.0L;
 			  if (type == WEIGHTED)
 			  {
-				 finput >> start >> des >> w;
 				 if(finput.eof())
 					 break;
+          finput >> start >> des >> w;
 			  }
 			  else
 			  {
-				finput >> start >> des;
 				if(finput.eof())
 					break;
+          finput >> start >> des;
 			  }
+        
               bool flag = false;
                 //remove the edge (start,end) (in links and weights we should find start and end and erase them)
             if(start >  g->nb_nodes-1 ) cout<<"wrong start deletion"<<endl;
@@ -478,7 +492,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
             }
             else if(start == 0){
               // Manul-Manan: why is 1 subtracted from the the upper limit?
-                it = find(g->links.begin(), g->links.begin()+g->degrees[start]-1, des);
+                it = find(g->links.begin(), g->links.begin()+g->degrees[start], des);
                 if(g->degrees[start] != 0 &&  distance(g->links.begin(),it)<g->degrees[start])//   it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                     flag = true;
@@ -498,7 +512,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
             }
             else{
               // Manul-Manan: why is 1 subtracted from the the upper limit?
-                it = find(g->links.begin()+g->degrees[start-1], g->links.begin()+ g->degrees[start]-1, des);
+                it = find(g->links.begin()+g->degrees[start-1], g->links.begin()+ g->degrees[start], des);
                 if(g->degrees[start] != g->degrees[start-1] && distance(g->links.begin()+g->degrees[start-1],it) < (g->degrees[start]-g->degrees[start-1]))//it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                     flag = true;
@@ -517,11 +531,13 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 
             }
 
+            if(start != des) {
             // Manul-Manan: uptil now (start, des) was deleted, now repeat same procedure with (des, start)
             if(des >  g->nb_nodes-1 ) cout<<"wrong end deletion"<<endl;
             else if(des == g->nb_nodes -1){
+              // cout << "Find in " << g->degrees[des-1] << endl;
                   it = find(g->links.begin() + g->degrees[des-1], g->links.end(), start);//check does not exist
-                if(g->degrees[start] != g->degrees[des-1] && it != g->links.end())//if this edge exists
+                if(g->degrees[des] != g->degrees[des-1] && it != g->links.end())//if this edge exists
                   {
                       flag = true;
                     *it = -1;
@@ -540,7 +556,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
             }
             else if(des == 0){
               // Manul-Manan: why is 1 subtracted from the the upper limit?
-                  it = find(g->links.begin(), g->links.begin()+g->degrees[des]-1, start);
+                  it = find(g->links.begin(), g->links.begin()+g->degrees[des], start);
                 if(g->degrees[des] != 0 &&  distance(g->links.begin(),it)<g->degrees[des])//   it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                       flag = true;
@@ -561,7 +577,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
             }
             else{
               // Manul-Manan: why is 1 subtracted from the the upper limit?
-                  it = find(g->links.begin()+g->degrees[des-1], g->links.begin()+ g->degrees[des]-1, start);
+                  it = find(g->links.begin()+g->degrees[des-1], g->links.begin()+ g->degrees[des], start);
                 if(g->degrees[des] != g->degrees[des-1] && distance(g->links.begin()+g->degrees[des-1],it) < (g->degrees[des]-g->degrees[des-1]))//it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                       flag = true;
@@ -579,15 +595,31 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
                     cerr<<"Debug... start: "<<start<<" does not have any edge"<<endl;
                   }
             }
+            }
 
             // Manul-Manan: flag is true if the edge (start, des) or (des, start) exists
             if(flag)//if the edges exists then reduce the degrees
             {
                 N[start]++;//we increase one when we remove an edge
-                N[des]++;
+                if(start != des) N[des]++;
                 // Manul-Manan: why (des, start) is not added?
                 vect.push_back(make_pair(start, des));
             }
+
+            // cout << "Deleted " << start << " " << des << endl;
+            // g->display();
+            // cout << endl;
+        // int sm = 0;
+        // for (int ll = 0; ll < g->degrees.size(); ll++)
+        // {
+        //   cout << ll << ": ";
+        //   for (int kk = sm; kk < g->degrees[ll]; kk++)
+        //   {
+        //     cout << g->links[kk] << " ";
+        //   }
+        //   sm += g->degrees[ll];
+        //   cout << endl;
+        // }
 
 	  }//end of while
 
@@ -605,6 +637,20 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 		  g->degrees[i] = g->degrees[i]-N[i];
         gettimeofday(&end3, NULL);
         t3 = (double) ((end3.tv_sec - start3.tv_sec)*1000 + (end3.tv_usec- start3.tv_usec)/1000) ;
+
+        // int sm = 0;
+        // for (int ll = 0; ll < g->degrees.size(); ll++)
+        // {
+        //   cout << ll << ": ";
+        //   for (int kk = sm; kk < g->degrees[ll]; kk++)
+        //   {
+        //     cout << g->links[kk] << " ";
+        //   }
+        //   sm += g->degrees[ll];
+        //   cout << endl;
+        // }
+        // g->display();
+        
      } // Manul-Manan: end of if(finput.isopen())
      finput.close();
      N.clear();
@@ -1044,6 +1090,21 @@ main(int argc, char **argv) {
   Graph g(filename, filename_w, type);
   Graph gr = g;
   int n = gr.nb_nodes;
+
+  // g.display();
+
+  // int sm = 0;
+  //       for (int ll = 0; ll < g.degrees.size(); ll++)
+  //       {
+  //         cout << ll << ": ";
+  //         for (int kk = sm; kk < g.degrees[ll]; kk++)
+  //         {
+  //           cout << g.links[kk] << " ";
+  //         }
+  //         sm = g.degrees[ll];
+  //         cout << endl;
+  //       }
+
   // Manul-Manan: this will create a new quality class (modularity by default), and initialize it with graph
   // Manul-Manan: g. Initially, each node is a community by itself (q->n2c[i] == i)
   init_quality(&g, nb_calls);
