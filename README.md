@@ -48,6 +48,3 @@ Make sure you have CUDA 10.2 or later installed along with GNU C++ compiler, alo
     It will output the progress as well as the modularity and runtime at each time step.
 
 At both steps 5 and 7, you can use the -e option to stop furthur computation to get higher modularity when the increase in modularity is below epsilon for a given iteration.
-
-
-
