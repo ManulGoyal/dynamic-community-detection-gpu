@@ -1,3 +1,6 @@
+/* Authors: Manul Goyal and Manan Shah 
+ * This file contains the parallel implementation of the delta-screening functions */
+
 #include "node_eval.cuh"
 #include "modularity_optimisation.cuh"
 #include <thrust/partition.h>
@@ -1280,8 +1283,8 @@ int nodeEval_del_gpu(device_structures& deviceStructures, host_structures& hostS
 
 	int *nodeEval, *commEval;
 
-	HANDLE_ERROR(cudaMalloc((void**)&nodeEval, hostStructures.V * sizeof(int))); // free it 
-	HANDLE_ERROR(cudaMalloc((void**)&commEval, hostStructures.V * sizeof(int))); // free it 
+	HANDLE_ERROR(cudaMalloc((void**)&nodeEval, hostStructures.V * sizeof(int))); // free it done
+	HANDLE_ERROR(cudaMalloc((void**)&commEval, hostStructures.V * sizeof(int))); // free it done
 
 	// Manul-Manan: TODO: These memsets are needed, right?
 	HANDLE_ERROR(cudaMemset(nodeEval, 0, hostStructures.V * sizeof(int)));

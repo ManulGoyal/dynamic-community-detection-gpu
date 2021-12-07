@@ -1,36 +1,53 @@
-# README #
+# Streaming Community Detection in Parallel #
+
+B.Tech. Project Semester VII
+
+Manul Goyal (B18CSE031) and Manan Shah (B18CSE030)
+
+Mentor: Dr. Dip Sankar Banerjee
+
+This is the repository for the BTP "Streaming Community Detection in Parallel", which implements the parallel version of delta-screening (), written in CUDA. The delta-screening method is an algorithm for determining a subset of nodes likely to be affected by addition/deletion of edges at a given time step, and therefore, should be re-evaluated by the static community detection algorithm (Louvain). This results in potentially lesser nodes to process at each time step, leading to faster runtime. The parallelization involved:
+
+1. Replacing the sequential Louvain algorithm with a parallel version, whose implementation is taken from (). We had to integrate this code (referred to as GPU Louvain from now on) to fit in the workflow of delta-screening, which involved making the following changes:
+    - Adding a parameter for the set of nodes to be re-evaluated in the modularity optimization phase of GPU Louvain, and finding the locally gain-maximizing communities for nodes in this set only
+    - Initializing the communities for each node at a given time-step based on the communities obtained in the last time-step (since delta-screening is an incremental algorithm, it starts with the current state of the communities and modifies it for the next time step, to prevent recomputations)
+    - When modifying the graph at any time-step, allowing the iteration over modularity optimization phase and community aggregation phase to run at least twice, even if the first iteration does not yield positive modularity gain. This is because the first iteration can potentially agglomerate communities (which were computed in the last time-step) and there may be scope of improvement in the new contracted graph
+2. Implementing parallel version of the dynamic portions of delta-screening, i.e., the computation of the set of nodes to be re-evaluated at every time step. This implementation was completely done by us, and the parallelization strategy is inspired by GPU Louvain
+
+### Instructions for Running ###
+
+In the following steps, we show how to run the sequential as well as parallel version of delta-screening on the ToyExample provided
+
+1. Clone the repository and navigate to the repository directory. Then compile the code using make: \
+```cd [REPO_FOLDER]``` \
+```make```
+
+Make sure you have CUDA 10.2 or later installed along with GNU C++ compiler, along with a CUDA-capable GPU.
+
+2. Navigate to the ToyExample folder, and  create directories for cpu and gpu: \
+```cd ToyExample``` \
+```mkdir cpu gpu```
+
+3. Preprocessing the graph: \
+```../convert -i Example.txt -o graph.bin```
+
+4. Go to the CPU folder: \
+```cd cpu```
+
+5. Run the CPU version of delta-screening on the Toy Example: \
+```../../cpulouvain ../graph.bin -l -1 -v -b ../delta_del -a 1 -x ../delta_add```
+
+    It will output the progress as well as the modularity and runtime at each time step.
+
+6. Go to the gpu folder: \
+```cd ../gpu```
+
+7. Run the GPU version of delta-screening on the Toy Example: \
+```../../gpulouvain_full_mem ../graph.bin -l -1 -v -b ../delta_del -a 1 -x ../delta_add```
+
+    It will output the progress as well as the modularity and runtime at each time step.
+
+At both steps 5 and 7, you can use the -e option to stop furthur computation to get higher modularity when the increase in modularity is below epsilon for a given iteration.
 
 
-### What is this repository for? ###
 
-* This project implement Delta-screening method and integrate it with static Louvain algorithm. The framework can be used to detect community structures within dynamic networks. This framework is built in C++ and can be applied to other static modularity-based algorithm to track the communities in evolving networks
-* The code can be run with  gcc>=5.0, c++11. The code is multi-platform and compiles on Linux, Mac OSX and Windows.
-
-### Citation information: ###
-
-N. Zarayeneh, A. Kalyanaraman.
-A fast and efficient incremental approach toward dynamic community detection. 
-Proc. 2019 IEEE/ACM International Conference on Advances in Social Networks Analysis and Mining (ASONAM'19), pp. 9-16, 2019.
-DOI: 10.1145/3341161.3342877
-
-### How do I get set up? ###
-
-* Download the respository
-* cd dynamic_community_detection
-*  **Preprocess data**
-    1. ***Addition and deletion chunks:*** Split the change files for each time step and get two text files for addition and deletion (name them consistently: name_of_addition0.txt, name_of_deletion0.txt, name_of_addition1.txt,name_of_deletion1, ...)
-    2. ***Create simple inputs:*** The input graph and changes are assumed to be simple, so you can use the to make all your inputs simple
-*  **Steps to detect communities at each time step** 
-    1. ***Input conversion:*** convert input graph format (a text in which each line contains a pair "source destination") to Binary format  ``` ./convert -i graph.txt -o graph.bin ``` This project can also be used to convert weighted graphs (a text in which each line contains a triple "source destination weight") using -w option: ```./convert -i graph.txt -o graph.bin -w graph.weights``` Moreover, to save space in some cases, nodes can be renumbered from 0 to nb_nodes-1 using -r option: ```./convert -i graph.txt -o graph.bin -r labelings_connection_file.txt```  
-    2. ***Compute communities:*** specify the quality function and display hierarchical tree ```./louvain graph.bin -l -1 -v -q id_qual -x delta_add -a 1 -b delta_del``` To ensure a faster computation (with a loss of quality), one can use -e option to stop furthur computation to get higher modularity when the increas in modularity is below epsilon for a given iteration: ```./louvain graph.bin -l -1 -q id_qual  -x delta_add -a 1 -b delta_del -e 0.001```  If thenetwork is weighted we use -w option: ```./louvain graph.bin -l -1 -q id_qual  -x delta_add -a 1 -b delta_del -w graph.weights``` . For the initial step, the algorithm can also start with any given partition using -p option ```./louvain graph.bin -q id_qual  -x delta_add -a 1 -b delta_del -p graph.part -v ``` 
-    3. ***Display information on the tree structure:*** it shows the number of hierarchical levels and nodes per level ```./hierarchy graphi.tree``` (like garph0.tree for time step 0, graph1.tree for time step 1,...) We can specify to display the nodes within each community for a given level of the tree: ```./hierarchy graphi.tree -l 2 > graph_node2comm_level2``` or display the nodes within each community for the last level of the tree: ```./hierarchy graphi.tree -m > graph_node2comm_lastlevel``` 
- 
-### Run the code with the provided examples ###
-*  **Toy example**
-    1. ```./convert -i Example.txt -o graph.bin ```
-    2. ```./louvain graph.bin -l -1 -v -q id_qual -x delta_add -a 1 -b delta_del``` 
-*  **Citation example** 
-    1. We used the citation graph (Arxiv  HEP-TH) for this example. This dataset covers papers published between 1993 and 2002.Consequently,  we  partitioned  this  period  into  10  timesteps (one for each year).
-    2. In the Preprocess.R code, set the directory path to the folder containing the cittion example that you have downloaded and run the code
-    3. ```./convert -i cite.txt -o graph.bin``` 
-    4. ```./louvain graph.bin -l -1 -v -q id_qual -x cite_add -a 1 -b cite_del``` 

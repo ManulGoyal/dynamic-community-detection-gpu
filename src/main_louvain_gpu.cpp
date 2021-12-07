@@ -170,16 +170,16 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
 			  long double w=1.0L;
 			  if (type == WEIGHTED)
 			  {
-				 finput >> start >> end >> w;
-				 if(finput.eof())
+          finput >> start >> end >> w;
+          if(finput.fail())
 					 break;
 			  }
 			  else
 			  {
           finput >> start >> end;
-          if(finput.eof())
-            break;
-			  }
+          if(finput.fail())
+					 break;
+        }
 			  /*******count different types of new edges for edge sampling*****/
         if(start < g->nb_nodes && end <g->nb_nodes)
         {
@@ -445,15 +445,15 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
 			  long double w = 1.0L;
 			  if (type == WEIGHTED)
 			  {
-				 finput >> start >> des >> w;
-				 if(finput.eof())
+          finput >> start >> des >> w;
+          if(finput.fail())
 					 break;
 			  }
 			  else
 			  {
-				finput >> start >> des;
-				if(finput.eof())
-					break;
+          finput >> start >> des;
+          if(finput.fail())
+					 break;
 			  }
               bool flag = false;
                 //remove the edge (start,end) (in links and weights we should find start and end and erase them)
@@ -482,7 +482,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
             }
             else if(start == 0){
               // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
-                it = find(g->links.begin(), g->links.begin()+g->degrees[start]-1, des);
+                it = find(g->links.begin(), g->links.begin()+g->degrees[start], des);
                 if(g->degrees[start] != 0 &&  distance(g->links.begin(),it)<g->degrees[start])//   it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                     flag = true;
@@ -502,7 +502,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
             }
             else{
               // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
-                it = find(g->links.begin()+g->degrees[start-1], g->links.begin()+ g->degrees[start]-1, des);
+                it = find(g->links.begin()+g->degrees[start-1], g->links.begin()+ g->degrees[start], des);
                 if(g->degrees[start] != g->degrees[start-1] && distance(g->links.begin()+g->degrees[start-1],it) < (g->degrees[start]-g->degrees[start-1]))//it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                     flag = true;
@@ -521,11 +521,12 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
 
             }
 
+             if(start != des) {
             // Manul-Manan: uptil now (start, des) was deleted, now repeat same procedure with (des, start)
             if(des >  g->nb_nodes-1 ) cout<<"wrong end deletion"<<endl;
             else if(des == g->nb_nodes -1){
                   it = find(g->links.begin() + g->degrees[des-1], g->links.end(), start);//check does not exist
-                if(g->degrees[start] != g->degrees[des-1] && it != g->links.end())//if this edge exists
+                if(g->degrees[des] != g->degrees[des-1] && it != g->links.end())//if this edge exists
                   {
                       flag = true;
                     *it = -1;
@@ -544,7 +545,7 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
             }
             else if(des == 0){
               // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
-                  it = find(g->links.begin(), g->links.begin()+g->degrees[des]-1, start);
+                  it = find(g->links.begin(), g->links.begin()+g->degrees[des], start);
                 if(g->degrees[des] != 0 &&  distance(g->links.begin(),it)<g->degrees[des])//   it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                       flag = true;
@@ -565,7 +566,8 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
             }
             else{
               // Manul-Manan: Issue: why is 1 subtracted from the the upper limit?
-                  it = find(g->links.begin()+g->degrees[des-1], g->links.begin()+ g->degrees[des]-1, start);
+                  it = find(g->links.begin()+g->degrees[des-1], g->links.begin()+ g->degrees[des], start);
+                  
                 if(g->degrees[des] != g->degrees[des-1] && distance(g->links.begin()+g->degrees[des-1],it) < (g->degrees[des]-g->degrees[des-1]))//it != g->links.begin()+g->degrees[start])//if this edge exists
                   {
                       flag = true;
@@ -580,15 +582,16 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename, Grap
                   }
                   else{
                     count_notexist++;
-                    cerr<<"Debug... start: "<<start<<" does not have any edge"<<endl;
+                    cerr<<"Debug... start: "<<start<<" does not have any edge with " << des <<endl;
                   }
             }
+             }
 
             // Manul-Manan: flag is true if the edge (start, des) or (des, start) exists
             if(flag)//if the edges exists then reduce the degrees
             {
                 N[start]++;//we increase one when we remove an edge
-                N[des]++;
+                if(start != des) N[des]++;
                 // Manul-Manan: why (des, start) is not added?
                 vect.push_back(make_pair(start, des));
 

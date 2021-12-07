@@ -171,14 +171,14 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
 			  if (type == WEIGHTED)
 			  {
 				 finput >> start >> end >> w;
-				 if(finput.eof())
+				 if(finput.fail())
 					 break;
 			  }
 			  else
 			  {
           finput >> start >> end;
-          if(finput.eof())
-            break;
+          if(finput.fail())
+					 break;
 			  }
 			  /*******count different types of new edges for edge sampling*****/
         if(start < g->nb_nodes && end <g->nb_nodes)
@@ -446,14 +446,14 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 			  if (type == WEIGHTED)
 			  {
 				 finput >> start >> des >> w;
-				 if(finput.eof())
+				 if(finput.fail())
 					 break;
 			  }
 			  else
 			  {
 				finput >> start >> des;
-				if(finput.eof())
-					break;
+				if(finput.fail())
+					 break;
 			  }
               bool flag = false;
                 //remove the edge (start,end) (in links and weights we should find start and end and erase them)

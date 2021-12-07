@@ -166,15 +166,15 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_add(string filename,Graph
 			  long double w=1.0L;
 			  if (type == WEIGHTED)
 			  {
-				 if(finput.eof())
-					 break;
           finput >> start >> end >> w;
+          if(finput.fail())
+					 break;
 			  }
 			  else
 			  {
-          if(finput.eof())
-            break;
           finput >> start >> end;
+          if(finput.fail())
+					 break;
 			  }
 			  /*******count different types of new edges for edge sampling*****/
         if(start < g->nb_nodes && end <g->nb_nodes)
@@ -454,15 +454,15 @@ vector<pair<unsigned int,unsigned int> > buildNewGraph_del(string filename,Graph
 			  long double w = 1.0L;
 			  if (type == WEIGHTED)
 			  {
-				 if(finput.eof())
-					 break;
           finput >> start >> des >> w;
+          if(finput.fail())
+					 break;
 			  }
 			  else
 			  {
-				if(finput.eof())
-					break;
           finput >> start >> des;
+          if(finput.fail())
+					 break;
 			  }
         
               bool flag = false;
