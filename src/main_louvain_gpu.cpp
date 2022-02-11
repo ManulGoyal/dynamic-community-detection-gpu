@@ -92,6 +92,9 @@ long double max_w = 1.0L;
 Quality *q;
 bool verbose = false;
 
+// Manul-Manan: Addition
+bool static_algo = false;
+bool delta_scr = true;
 
 static double TimeSpecToSeconds(struct timespec* ts)
 {
@@ -940,6 +943,15 @@ parse_args(int argc, char **argv) {
         filename_del = argv[i+1];
         i++;
         break;
+    case 's':
+        static_algo = true;
+        delta_scr = false;
+        i++;
+        break;
+    case 'f':
+        delta_scr = false;
+        i++;
+        break;
     default:
         usage(argv[0], "Unknown option\n");
       }
@@ -1277,22 +1289,30 @@ main(int argc, char **argv) {
 		nb_calls++;
 		Louvain c1(-1, precision, q);//call louvain constructor
 
-    // Manul-Manan: n2c contains the comm corr. to each original node as per the last level of the last time step
-    // Manul-Manan: this should be used as the initial partition at the beginning of this time step
-		c1.init_partition_v(n2c);
-		q->n2c = n2c;
+    // Manul-Manan: hybrid
+    if(!static_algo) {
+      // Manul-Manan: n2c contains the comm corr. to each original node as per the last level of the last time step
+      // Manul-Manan: this should be used as the initial partition at the beginning of this time step
+      c1.init_partition_v(n2c);
+      q->n2c = n2c;
+    }
+
 		struct timeval sTime2, eTime2;
 		gettimeofday(&sTime2, NULL);
 		//Re = nodToEval_b(nodes_in_comm,&g1,&c1, type,n2c,vect_new_edges, nb_nodes_b);
 
     // Manul start
       GTIC("part after del mem");
-      GPUWrapper gpuWrapper(&c1, n2c, true);
+      GPUWrapper gpuWrapper(&c1, n2c, !static_algo);
       GTOC;
 
-      GTIC("node eval del gpu");
-      int R_size = gpuWrapper.gpuNodeEvalDel(delEdges);
-      GTOC;
+      // Manul-Manan: hybrid
+      int R_size = (c1.qual->size);
+      if(delta_scr) {
+        GTIC("node eval del gpu");
+        R_size = gpuWrapper.gpuNodeEvalDel(delEdges);
+        GTOC;
+      }
 
     // Manul end
 
@@ -1531,8 +1551,13 @@ main(int argc, char **argv) {
 	  	init_quality(&g1, nb_calls);
 	  	nb_calls++;
 	  	Louvain c1(-1, precision, q);//call louvain constructor
-	  	c1.init_partition_v(n2c);
-	  	q->n2c = n2c;
+
+      // Manul-Manan: hybrid
+      if(!static_algo) {
+        c1.init_partition_v(n2c);
+        q->n2c = n2c;
+      }
+
 	  	struct timeval sTime2, eTime2;
 	  	gettimeofday(&sTime2, NULL);
 
@@ -1576,12 +1601,16 @@ main(int argc, char **argv) {
 
       // Manul start
       GTIC("part after add mem");
-      GPUWrapper gpuWrapper(&c1, n2c, true);
+      GPUWrapper gpuWrapper(&c1, n2c, !static_algo);
       GTOC;
 
-      GTIC("node eval add gpu");
-      int R_size = gpuWrapper.gpuNodeEvalAdd(vect_new_edges);
-      GTOC;
+      // Manul-Manan: hybrid
+      int R_size = (c1.qual->size);
+      if(delta_scr) {
+        GTIC("node eval add gpu");
+        R_size = gpuWrapper.gpuNodeEvalAdd(vect_new_edges);
+        GTOC;
+      }
 
       // Manul end
 
